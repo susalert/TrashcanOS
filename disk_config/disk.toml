@@ -1,3 +1,7 @@
 [[customizations.filesystem]]
 mountpoint = "/"
 minsize = "50 GiB"
+
+[[customizations.filesystem]]
+mountpoint = "/boot"
+minsize = "512 MiB"
