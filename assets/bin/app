@@ -32,19 +32,44 @@ fi
 
 case "$COMMAND" in
     install)
-        if [ -z "$PACKAGE" ]; then
-            echo -e "${RED}Error: What do you want to install?${NC}"
+        if [ -z "$TARGET" ]; then
+            echo -e "${RED}Error: You must specify a package name or .rpm file.${NC}"
             exit 1
         fi
-        echo -e "${GREEN}⬇️  Downloading and Installing $PACKAGE...${NC}"
-        # Install inside the box
-        distrobox enter "$CONTAINER_NAME" -- sudo dnf install -y "$PACKAGE"
 
-        # Export it to the host menu! (The Magic Step)
-        echo -e "${GREEN}🔗 Linking to TrashcanOS Menu...${NC}"
-        distrobox enter "$CONTAINER_NAME" -- distrobox-export --app "$PACKAGE"
+        ensure_container
 
-        echo -e "${GREEN}✅ Done! $PACKAGE is ready to launch.${NC}"
+        # CHECK: Is it a local .rpm file?
+        if [[ "$TARGET" == *.rpm ]]; then
+            # It is an RPM file!
+            if [ -f "$TARGET" ]; then
+                echo -e "${GREEN}📦 Detected local RPM file. Installing in container...${NC}"
+
+                # Get absolute path.
+                # NOTE: This works best if the file is inside your Home folder (Downloads, etc),
+                # because Distrobox automatically mounts Home.
+                RPM_PATH=$(realpath "$TARGET")
+
+                # Install inside the container (No reboot needed!)
+                distrobox enter "$CONTAINER_NAME" -- sudo dnf install -y "$RPM_PATH"
+            else
+                echo -e "${RED}Error: File '$TARGET' not found.${NC}"
+                exit 1
+            fi
+        else
+            # It is a standard repo package
+            echo -e "${GREEN}⬇️  Downloading and installing $TARGET...${NC}"
+            distrobox enter "$CONTAINER_NAME" -- sudo dnf install -y "$TARGET"
+        fi
+
+        # Export the app so it shows up in the menu
+        echo -e "${GREEN}🔗 Exporting to host menu...${NC}"
+        # We try to export the specific target first
+        distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-app "$TARGET" 2>/dev/null || true
+        # Then we force a full export scan to catch any weird binary names
+        distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-apps
+
+        echo -e "${GREEN}✅ Installation complete!${NC}"
         ;;
 
     remove)
