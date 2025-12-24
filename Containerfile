@@ -91,7 +91,7 @@ RUN sed -i \
 ## --------------------------------------------------- ##
 
 ## ------------------- VISUAL CLEANUP ------------------- ##
-RUN plymouth-set-default-theme -R spinner
+RUN plymouth-set-default-theme spinner
 
 RUN mkdir -p /usr/share/backgrounds/trashcanos
 COPY assets/TrashcanOS-default.jpg /usr/share/backgrounds/trashcanos/login.jpg
