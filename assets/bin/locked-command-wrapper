@@ -4,6 +4,23 @@
 REAL_CMD=$(basename "$0")
 LOCK_FILE="/etc/trashcan/dev-mode-enabled"
 
+# --- 🔓 EXCEPTIONS (Allow specific commands to bypass the lock) ---
+
+# 1. ALLOW 'bootc install'
+# Why: The image builder (bib) NEEDS this to generate QCOW2/ISO images.
+# Also, running 'bootc install' requires root and targets a disk, so it's an admin task.
+if [[ "$REAL_CMD" == "bootc" ]] && [[ "$1" == "install" ]]; then
+    exec "/usr/bin/$REAL_CMD" "$@"
+fi
+
+# 2. ALLOW 'status' checks
+# Why: Users should be able to check version info/status without unlocking.
+if [[ "$1" == "status" ]]; then
+    exec "/usr/bin/$REAL_CMD" "$@"
+fi
+
+# ------------------------------------------------------------------
+
 if [ -f "$LOCK_FILE" ]; then
     # Dev mode is ON. Execute the REAL command from /usr/bin
     exec "/usr/bin/$REAL_CMD" "$@"
