@@ -52,6 +52,20 @@ RUN useradd -m -G wheel test && \
     echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-wheel-nopasswd
 ## ---------------------------------------------- ##
 
+## ------------------- APP MANAGER & RESTRICTIONS ------------------- ##
+COPY assets/bin/app /usr/bin/app
+COPY assets/bin/trashcanctl /usr/bin/trashcanctl
+COPY assets/bin/locked-command-wrapper /usr/local/bin/rpm-ostree
+COPY assets/bin/locked-command-wrapper /usr/local/bin/bootc
+
+RUN chmod +x /usr/bin/app \
+             /usr/bin/trashcanctl \
+             /usr/local/bin/rpm-ostree \
+             /usr/local/bin/bootc
+
+RUN mkdir -p /etc/trashcan
+## ------------------------------------------------------------------ ##
+
 ## ------------------- OS IDENTITY ------------------- ##
 RUN sed -i \
   -e 's/^NAME=.*/NAME="TrashcanOS"/' \

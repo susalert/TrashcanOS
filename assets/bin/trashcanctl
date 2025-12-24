@@ -1,0 +1,24 @@
+#!/bin/bash
+# trashcanctl - System Control Utility
+
+COMMAND="$1"
+LOCK_FILE="/etc/trashcan/dev-mode-enabled"
+LOCK_DIR="/etc/trashcan"
+
+if [ "$COMMAND" == "--enable-dev-tools" ]; then
+    echo "⚠️  WARNING: You are about to unlock system-level modifications."
+    echo "This allows usage of 'rpm-ostree' and 'bootc'."
+    read -p "Are you sure? (y/N): " confirm
+    if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
+        sudo mkdir -p "$LOCK_DIR"
+        sudo touch "$LOCK_FILE"
+        echo "🔓 Dev Tools ENABLED. You can now use rpm-ostree."
+    else
+        echo "❌ Cancelled."
+    fi
+elif [ "$COMMAND" == "--disable-dev-tools" ]; then
+    sudo rm -f "$LOCK_FILE"
+    echo "🔒 Dev Tools DISABLED. System is safe."
+else
+    echo "Usage: trashcanctl [ --enable-dev-tools | --disable-dev-tools ]"
+fi

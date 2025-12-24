@@ -1,0 +1,66 @@
+#!/bin/bash
+# app - The TrashcanOS Package Manager Wrapper
+
+COMMAND="$1"
+PACKAGE="$2"
+CONTAINER_NAME="trashcan-box"
+
+# Colors
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+show_help() {
+    echo -e "🗑️  ${GREEN}TrashcanOS App Manager${NC}"
+    echo "Usage:"
+    echo "  app install <package>   Install an app (e.g., firefox, vlc)"
+    echo "  app remove <package>    Remove an app"
+    echo "  app list                List installed apps"
+}
+
+if [ -z "$COMMAND" ]; then
+    show_help
+    exit 1
+fi
+
+# Ensure the backend container exists
+if ! podman container exists "$CONTAINER_NAME" > /dev/null 2>&1; then
+    echo -e "${GREEN}📦 Initializing the App Environment (First run only)...${NC}"
+    # Create a Fedora container silently
+    distrobox create -n "$CONTAINER_NAME" -i registry.fedoraproject.org/fedora:latest -Y > /dev/null
+fi
+
+case "$COMMAND" in
+    install)
+        if [ -z "$PACKAGE" ]; then
+            echo -e "${RED}Error: What do you want to install?${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}⬇️  Downloading and Installing $PACKAGE...${NC}"
+        # Install inside the box
+        distrobox enter "$CONTAINER_NAME" -- sudo dnf install -y "$PACKAGE"
+
+        # Export it to the host menu! (The Magic Step)
+        echo -e "${GREEN}🔗 Linking to TrashcanOS Menu...${NC}"
+        distrobox enter "$CONTAINER_NAME" -- distrobox-export --app "$PACKAGE"
+
+        echo -e "${GREEN}✅ Done! $PACKAGE is ready to launch.${NC}"
+        ;;
+
+    remove)
+        if [ -z "$PACKAGE" ]; then
+            echo -e "${RED}Error: What do you want to remove?${NC}"
+            exit 1
+        fi
+        distrobox enter "$CONTAINER_NAME" -- sudo dnf remove -y "$PACKAGE"
+        echo -e "${GREEN}🗑️  $PACKAGE removed.${NC}"
+        ;;
+
+    list)
+        distrobox enter "$CONTAINER_NAME" -- dnf list installed --userinstalled
+        ;;
+
+    *)
+        show_help
+        ;;
+esac

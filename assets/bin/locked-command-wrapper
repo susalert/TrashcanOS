@@ -1,0 +1,18 @@
+#!/bin/bash
+# Wrapper to block dangerous commands unless Dev Mode is enabled
+
+REAL_CMD=$(basename "$0")
+LOCK_FILE="/etc/trashcan/dev-mode-enabled"
+
+if [ -f "$LOCK_FILE" ]; then
+    # Dev mode is ON. Execute the REAL command from /usr/bin
+    exec "/usr/bin/$REAL_CMD" "$@"
+else
+    # Dev mode is OFF. Block it.
+    echo "⛔ ACCESS DENIED: System is in Safe Mode."
+    echo "This command ($REAL_CMD) can modify the immutable core."
+    echo ""
+    echo "To unlock, run: trashcanctl --enable-dev-tools"
+    echo "⚠️  You assume full responsibility for system stability."
+    exit 1
+fi
