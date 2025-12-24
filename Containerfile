@@ -45,6 +45,13 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 ## Verify final image and contents are correct.
 RUN bootc container lint
 
+## ------------- APP DOCKER WORK IMAGE -------------- ##
+RUN podman pull registry.fedoraproject.org/fedora:latest
+
+## ----------- BAZAAR DISPOSAL ----------- ##
+RUN rpm-ostree override remove bazaar && \
+    rpm-ostree install plasma-discover
+
 ## ---------- DEV TESTING PURPOSE ONLY ---------- ##
 # Temporary test user to access the DE for testing #
 RUN useradd -m -G wheel test && \
@@ -105,7 +112,7 @@ RUN sed -i \
 RUN sed -i 's/^BOOTLOADER_NAME=.*/BOOTLOADER_NAME="TrashcanOS"/' /usr/lib/os-release
 ## --------------------------------------------------- ##
 
-## ------------------- VISUAL CLEANUP ------------------- ##
+## --------------------------------------------- VISUAL CLEANUP --------------------------------------------- ##
 RUN plymouth-set-default-theme spinner
 
 RUN mkdir -p /usr/share/backgrounds/trashcanos
@@ -113,8 +120,26 @@ COPY assets/TrashcanOS-default.jpg /usr/share/backgrounds/trashcanos/login.jpg
 
 RUN printf "[Theme]\nCurrent=breeze\n" > /etc/sddm.conf.d/kde_settings.conf
 
-RUN ln -sf /usr/share/backgrounds/trashcanos/login.jpg /usr/share/wallpapers/Next/contents/images/1920x1080.png
-RUN ln -sf /usr/share/backgrounds/trashcanos/login.jpg /usr/share/wallpapers/Next/contents/images/2560x1440.png
+RUN mkdir -p /usr/share/wallpapers/TrashcanOS/contents/images
+
+COPY assets/TrashcanOS-default.jpg /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg
+
+RUN ln -sf /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg /usr/share/wallpapers/Next/contents/images/1920x1080.png && \
+    ln -sf /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg /usr/share/wallpapers/Next/contents/images/2560x1440.png && \
+    ln -sf /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg /usr/share/wallpapers/Next/contents/images/1366x768.png
+
+RUN mkdir -p /usr/share/backgrounds/trashcanos && \
+    ln -sf /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg /usr/share/backgrounds/trashcanos/login.jpg
 
 RUN [ -f /etc/default/grub ] && sed -i 's/^GRUB_THEME=.*/#GRUB_THEME="disabled"/' /etc/default/grub || true
-## -------------------------------------------------------- ##
+
+RUN rm -f /etc/xdg/kcm-about-distrorc \
+          /usr/share/kservices5/bazzite-about-distro.desktop \
+          /usr/share/applications/bazzite-documentation.desktop \
+          /etc/profile.d/bazzite-neofetch.sh 2>/dev/null || true
+## ---------------------------------------------------------------------------------------------------------- ##
+
+## -------------------------------- LOGO FIX -------------------------------- ##
+COPY assets/trashcanos.svg /usr/share/icons/hicolor/scalable/apps/trashcanos.svg
+COPY assets/trashcanos.svg /usr/share/pixmaps/trashcanos.svg
+## -------------------------------------------------------------------------- ##

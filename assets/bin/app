@@ -56,6 +56,22 @@ case "$COMMAND" in
         echo -e "${GREEN}🗑️  $PACKAGE removed.${NC}"
         ;;
 
+    update)
+        echo -e "${GREEN}🔄 Checking for updates...${NC}"
+        # Just refresh metadata, don't install yet
+        distrobox enter "$CONTAINER_NAME" -- sudo dnf check-update
+        ;;
+
+    upgrade)
+        echo -e "${GREEN}⬆️  Upgrading all apps...${NC}"
+        # Run the actual upgrade
+        distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade -y
+        # Refresh menu icons in case they changed
+        echo -e "${GREEN}🔗 Refreshing menu links...${NC}"
+        distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-apps
+        echo -e "${GREEN}✅ Upgrade complete.${NC}"
+        ;;
+
     list)
         distrobox enter "$CONTAINER_NAME" -- dnf list installed --userinstalled
         ;;
