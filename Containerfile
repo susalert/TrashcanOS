@@ -27,6 +27,7 @@ FROM ghcr.io/ublue-os/bazzite:latest
 
 ## ------- CUSTOMIZATION ASSETS ------- ##
 COPY assets/ /usr/share/trashcanos-assets/
+## ------------------------------------ ##
 
 ### MODIFICATIONS
 ## make modifications desired in your image and install packages by modifying the build.sh script
@@ -45,12 +46,20 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 ## Verify final image and contents are correct.
 RUN bootc container lint
 
-## ------------- APP DOCKER WORK IMAGE -------------- ##
+## -------------- APP DOCKER WORK IMAGE -------------- ##
 #RUN podman pull registry.fedoraproject.org/fedora:latest
+## --------------------------------------------------- ##
 
 ## ----------- BAZAAR DISPOSAL ----------- ##
 RUN rpm-ostree override remove bazaar && \
-    rpm-ostree install plasma-discover
+    rpm-ostree install plasma-discover && \
+    rpm-ostree install gearlever && \
+    rpm-ostree override remove vim-enhanced && \
+    rpm-ostree install nvim
+
+ENV EDITOR=nvim
+ENV VISUAL=nvim
+## --------------------------------------- ##
 
 ## ---------- DEV TESTING PURPOSE ONLY ---------- ##
 # Temporary test user to access the DE for testing #
