@@ -53,9 +53,8 @@ RUN bootc container lint
 ## ----------- BAZAAR DISPOSAL ----------- ##
 RUN rpm-ostree override remove bazaar && \
     rpm-ostree install plasma-discover && \
-    rpm-ostree install gearlever && \
     rpm-ostree override remove vim-enhanced && \
-    rpm-ostree install nvim
+    rpm-ostree install neovim
 
 ENV EDITOR=nvim
 ENV VISUAL=nvim
