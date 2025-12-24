@@ -38,3 +38,9 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 ### LINTING
 ## Verify final image and contents are correct.
 RUN bootc container lint
+
+## ---------- DEV TESTING PURPOSE ONLY ---------- ##
+# Temporary test user to access the DE for testing #
+RUN useradd -m -G wheel,video,audio,input test && \
+    echo "test:test" | chpasswd && \
+    echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-wheel-nopasswd
