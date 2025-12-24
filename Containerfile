@@ -41,6 +41,6 @@ RUN bootc container lint
 
 ## ---------- DEV TESTING PURPOSE ONLY ---------- ##
 # Temporary test user to access the DE for testing #
-RUN useradd -m -G wheel,video,audio,input test && \
+RUN useradd -m -G wheel test && \
     echo "test:test" | chpasswd && \
     echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-wheel-nopasswd
