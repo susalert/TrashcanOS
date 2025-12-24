@@ -25,6 +25,9 @@ FROM ghcr.io/ublue-os/bazzite:latest
 
 # RUN rm /opt && mkdir /opt
 
+## ------- CUSTOMIZATION ASSETS ------- ##
+COPY assets/ /usr/share/trashcanos-assets/
+
 ### MODIFICATIONS
 ## make modifications desired in your image and install packages by modifying the build.sh script
 ## the following RUN directive does all the things required to run "build.sh" as recommended.
@@ -35,6 +38,9 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/build.sh
     
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    /ctx/customize-kde.sh
+
 ### LINTING
 ## Verify final image and contents are correct.
 RUN bootc container lint
@@ -44,3 +50,26 @@ RUN bootc container lint
 RUN useradd -m -G wheel test && \
     echo "test:test" | chpasswd && \
     echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-wheel-nopasswd
+## ---------------------------------------------- ##
+
+## ------------------- OS IDENTITY ------------------- ##
+RUN sed -i \
+  -e 's/^NAME=.*/NAME="TrashcanOS"/' \
+  -e 's/^PRETTY_NAME=.*/PRETTY_NAME="TrashcanOS sAlpha"/' \
+  -e 's/^ID=.*/ID=trashcanos/' \
+  -e 's/^ID_LIKE=.*/ID_LIKE="fedora"/' \
+  -e 's/^VARIANT=.*/VARIANT="Immutable Desktop"/' \
+  -e 's/^LOGO=.*/LOGO=trashcanos/' \
+  /usr/lib/os-release
+## --------------------------------------------------- ##
+
+## ------------------- TRASHCANOS ID ------------------- ##
+RUN tee /usr/lib/trashcanos-release << 'EOF'
+NAME=TrashcanOS
+VERSION=sAlpha
+EDITION=General
+DE=Plasma
+EOF
+
+RUN ln -sf /usr/lib/trashcanos-release /etc/trashcanos-release
+RUN ln -sf /usr/lib/trashcanos-release /etc/system-release
