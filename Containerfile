@@ -64,12 +64,9 @@ RUN sed -i \
 ## --------------------------------------------------- ##
 
 ## ------------------- TRASHCANOS ID ------------------- ##
-RUN tee /usr/lib/trashcanos-release << 'EOF'
-NAME=TrashcanOS
-VERSION=sAlpha
-EDITION=General
-DE=Plasma
-EOF
+RUN printf "NAME=TrashcanOS\nVERSION=sAlpha\nEDITION=General\nDE=Plasma\n" > /usr/lib/trashcanos-release
 
+# Link it so the system can find it
 RUN ln -sf /usr/lib/trashcanos-release /etc/trashcanos-release
 RUN ln -sf /usr/lib/trashcanos-release /etc/system-release
+## --------------------------------------------------- ##
