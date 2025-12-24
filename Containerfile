@@ -69,4 +69,23 @@ RUN printf "NAME=TrashcanOS\nVERSION=sAlpha\nEDITION=General\nDE=Plasma\n" > /us
 # Link it so the system can find it
 RUN ln -sf /usr/lib/trashcanos-release /etc/trashcanos-release
 RUN ln -sf /usr/lib/trashcanos-release /etc/system-release
+# 1. Nuke the Bazzite Welcome Scripts 🗑️
+RUN rm -f /etc/profile.d/bazzite-neofetch.sh \
+          /etc/profile.d/user-motd.sh \
+          /etc/profile.d/00-bazzite-welcome.sh 2>/dev/null || true
+
+# 2. Add our own simple welcome message (Optional)
+RUN echo 'echo "🍌 Welcome to TrashcanOS sAlpha. Prepare for chaos."' > /etc/profile.d/00-trashcan-welcome.sh
+
+# 3. Fix the Hostname permanently
+RUN echo "trashcanos" > /etc/hostname
+
+# 4. Scrub the remaining URLs and Metadata in os-release
+# We use sed to replace the remaining "bazzite" references with "trashcanos"
+RUN sed -i \
+    -e 's|bazzite.gg|trashcanos.org|g' \
+    -e 's|universal-blue:bazzite|susalert:trashcanos|g' \
+    -e 's|DEFAULT_HOSTNAME="bazzite"|DEFAULT_HOSTNAME="trashcanos"|g' \
+    -e 's|VARIANT_ID=bazzite|VARIANT_ID=trashcanos|g' \
+    /usr/lib/os-release
 ## --------------------------------------------------- ##
