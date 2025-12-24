@@ -46,7 +46,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 RUN bootc container lint
 
 ## ------------- APP DOCKER WORK IMAGE -------------- ##
-RUN podman pull registry.fedoraproject.org/fedora:latest
+#RUN podman pull registry.fedoraproject.org/fedora:latest
 
 ## ----------- BAZAAR DISPOSAL ----------- ##
 RUN rpm-ostree override remove bazaar && \
