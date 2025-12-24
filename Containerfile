@@ -89,3 +89,17 @@ RUN sed -i \
     -e 's|VARIANT_ID=bazzite|VARIANT_ID=trashcanos|g' \
     /usr/lib/os-release
 ## --------------------------------------------------- ##
+
+## ------------------- VISUAL CLEANUP ------------------- ##
+RUN plymouth-set-default-theme -R spinner
+
+RUN mkdir -p /usr/share/backgrounds/trashcanos
+COPY assets/TrashcanOS-default.jpg /usr/share/backgrounds/trashcanos/login.jpg
+
+RUN printf "[Theme]\nCurrent=breeze\n" > /etc/sddm.conf.d/kde_settings.conf
+
+RUN ln -sf /usr/share/backgrounds/trashcanos/login.jpg /usr/share/wallpapers/Next/contents/images/1920x1080.png
+RUN ln -sf /usr/share/backgrounds/trashcanos/login.jpg /usr/share/wallpapers/Next/contents/images/2560x1440.png
+
+RUN sed -i 's/^GRUB_THEME=.*/#GRUB_THEME="disabled"/' /etc/default/grub
+## -------------------------------------------------------- ##
