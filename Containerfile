@@ -88,6 +88,7 @@ RUN sed -i \
     -e 's|DEFAULT_HOSTNAME="bazzite"|DEFAULT_HOSTNAME="trashcanos"|g' \
     -e 's|VARIANT_ID=bazzite|VARIANT_ID=trashcanos|g' \
     /usr/lib/os-release
+RUN sed -i 's/^BOOTLOADER_NAME=.*/BOOTLOADER_NAME="TrashcanOS"/' /usr/lib/os-release
 ## --------------------------------------------------- ##
 
 ## ------------------- VISUAL CLEANUP ------------------- ##
