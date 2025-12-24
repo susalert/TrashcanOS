@@ -39,7 +39,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/build.sh
     
 #RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
-    /ctx/customize-kde.sh
+#    /ctx/customize-kde.sh
 
 ### LINTING
 ## Verify final image and contents are correct.
