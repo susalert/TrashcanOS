@@ -9,7 +9,7 @@
         ],
         "Category": "",
         "Description": "The stock TrashcanOS theme",
-        "Id": "org.trashcanos.desktop",
+        "Id": "org.trashcanosdark.desktop",
         "License": "",
         "Name": "OxyDark",
         "ServiceTypes": [
