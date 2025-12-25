@@ -123,6 +123,17 @@ RUN echo 'echo "🍌 Welcome to TrashcanOS sAlpha. Prepare for chaos."' > /etc/p
 
 # 6. Set Hostname
 RUN echo "trashcanos" > /etc/hostname
+
+RUN rm -f /etc/xdg/kcm-about-distrorc \
+          /usr/share/kservices5/bazzite-about-distro.desktop \
+          /usr/share/applications/bazzite-documentation.desktop 2>/dev/null || true
+
+# 2. Inject the Logo
+COPY assets/trashcanos.svg /usr/share/pixmaps/trashcanos.svg
+COPY assets/trashcanos.svg /usr/share/icons/hicolor/scalable/apps/trashcanos.svg
+
+# 3. Ensure Plymouth (Boot Screen) is clean
+RUN plymouth-set-default-theme spinner
 ## ------------------------------------------------------------- ##
 
 ## -------------------------------- LOGO FIX -------------------------------- ##
