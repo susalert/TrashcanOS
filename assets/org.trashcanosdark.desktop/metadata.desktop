@@ -1,0 +1,16 @@
+[Desktop Entry]
+Comment=OxyDark -- A theme made to customize the look and feel of TrashcanOS
+Name=OxyDark
+Type=Service
+
+X-KDE-ServiceTypes=Plasma/LookAndFeel
+X-KDE-ParentApp=
+X-KDE-PluginInfo-Author=susalert
+X-KDE-PluginInfo-Category=
+X-KDE-PluginInfo-Email=
+X-KDE-PluginInfo-License=
+X-KDE-PluginInfo-Name=org.trashcanos.desktop
+X-KDE-PluginInfo-Version=0.01
+X-KDE-PluginInfo-Website=
+X-Plasma-MainScript=defaults
+X-KDE-PluginInfo-License=

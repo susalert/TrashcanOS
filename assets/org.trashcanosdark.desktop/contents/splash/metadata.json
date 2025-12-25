@@ -1,0 +1,8 @@
+{
+  "KPlugin": {
+    "Id": "org.trashcanos.desktop",
+    "Name": "TrashcanOS Splash",
+    "Category": "Plasma Splashscreen",
+    "EnabledByDefault": true
+  }
+}

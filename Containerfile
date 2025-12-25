@@ -119,7 +119,7 @@ RUN rm -f \
     2>/dev/null || true
 
 # Add Trashcan Welcome Script
-RUN echo 'echo "🍌 Welcome to TrashcanOS sAlpha. Prepare for chaos."' > /etc/profile.d/00-trashcan-welcome.sh
+RUN echo 'echo "🍌 Welcome to TrashcanOS sAlpha."' > /etc/profile.d/00-trashcan-welcome.sh
 ## -------------------------------------------------------------------- ##
 
 ## ------------------- ☢️ NUCLEAR BRANDING INJECTION ------------------- ##
@@ -138,14 +138,24 @@ RUN rm -rf /usr/share/plasma/look-and-feel/org.valve.vapour.desktop \
            /usr/share/plasma/look-and-feel/org.valve.vgui.desktop \
            /usr/share/plasma/desktoptheme/Vapour
 
-COPY assets/default-wpp.png /usr/share/wallpapers/default-wpp.png
+COPY assets/default-light.png /usr/share/wallpapers/default-light.png
+COPY assets/default-dark.png /usr/share/wallpapers/default-dark.png
 COPY assets/org.trashcanos.desktop /usr/share/plasma/look-and-feel/org.trashcanos.desktop
+COPY assets/org.trashcanosdark.desktop /usr/share/plasma/look-and-feel/org.trashcanosdark.desktop
 COPY assets/config/kdeglobals /etc/xdg/kdeglobals
 COPY assets/config/plasmarc /etc/xdg/plasmarc
 COPY assets/config/kwinrc /etc/xdg/kwinrc
 COPY assets/config/kcminputrc /etc/xdg/kcminputrc
 COPY assets/config/kscreenlockerrc /etc/xdg/kscreenlockerrc
 COPY assets/config/plasma-org.kde.plasma.desktop-appletsrc /etc/xdg/plasma-org.kde.plasma.desktop-appletsrc
+COPY assets/sddm /usr/share/sddm/themes/oxy
+
+RUN mkdir -p /etc/sddm.conf.d && \
+    cat > /etc/sddm.conf.d/10-theme.conf << 'EOF'
+[Theme]
+Current=oxy
+EOF
+RUN chmod -R a-w /usr/share/sddm/themes/oxy
 ## ------------------------------------------------------------------------- ##
 
 ## ------------------- FINAL SCRUB: REMOVE BAZZITE IMAGES ------------------- ##

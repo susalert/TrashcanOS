@@ -5,7 +5,7 @@ widgetStyle=Breeze
 ColorScheme=Breeze
 
 [kdeglobals][Icons]
-Theme=breeze-dark
+Theme=breeze
 
 [plasmarc][Theme]
 name=Oxy
