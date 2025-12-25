@@ -84,7 +84,8 @@ case "$COMMAND" in
         # Export to menu
         echo -e "${GREEN}🔗 Exporting to host menu...${NC}"
         distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-app "$TARGET" 2>/dev/null || true
-        # Removed invalid --export-apps flag here
+        # 🗑️ REMOVED THE INVALID FLAG HERE 🗑️
+
         echo -e "${GREEN}✅ Installation complete!${NC}"
         ;;
 
@@ -104,8 +105,7 @@ case "$COMMAND" in
             # No argument: Update ALL Apps
             echo -e "${GREEN}📦 Updating all Container Apps...${NC}"
             distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
-            echo -e "${GREEN}🔗 Refreshing menu links...${NC}"
-            distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-apps
+            # Note: No need to re-export apps, dnf handles the binary updates in place.
             echo -e "${GREEN}✅ App updates complete.${NC}"
         else
             # Argument provided: Update specific App
@@ -116,15 +116,13 @@ case "$COMMAND" in
         ;;
 
     upgrade)
-        # 1. Update Apps (Same logic as 'update')
+        # 1. Update Apps
         ensure_container
         if [ -z "$TARGET" ]; then
             echo -e "${BLUE}============ 1/2: UPDATING APPS ============${NC}"
             distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
-            distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-apps
 
             echo -e "${BLUE}============ 2/2: UPDATING SYSTEM (Bootc) ============${NC}"
-            # We use sudo here to call the host bootc
             echo -e "${YELLOW}Checking for TrashcanOS Core Updates...${NC}"
             sudo /usr/bin/bootc upgrade
 
@@ -152,13 +150,12 @@ case "$COMMAND" in
         echo -e "${BLUE}🧊 [2/4] Updating Container Apps...${NC}"
         ensure_container
         distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
-        distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-apps
 
         # 3. System Base (Bootc)
         echo -e "${BLUE}💿 [3/4] Updating TrashcanOS Core...${NC}"
         sudo /usr/bin/bootc upgrade
 
-        # 4. Layered Packages (RPM-OSTree) - The "Nuclear" option
+        # 4. Layered Packages (RPM-OSTree)
         echo -e "${BLUE}🛡️  [4/4] Updating Layered Drivers...${NC}"
         sudo /usr/bin/rpm-ostree upgrade
 
