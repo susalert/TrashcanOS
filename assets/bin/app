@@ -83,7 +83,7 @@ case "$COMMAND" in
 
         # Export to menu
         echo -e "${GREEN}🔗 Exporting to host menu...${NC}"
-        distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-app "$TARGET" 2>/dev/null || true
+        distrobox enter "$CONTAINER_NAME" -- distrobox-export --app "$TARGET" 2>/dev/null || true
         # 🗑️ REMOVED THE INVALID FLAG HERE 🗑️
 
         echo -e "${GREEN}✅ Installation complete!${NC}"

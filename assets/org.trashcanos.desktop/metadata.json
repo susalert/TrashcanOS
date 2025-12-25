@@ -1,0 +1,23 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "",
+                "Name": "susalert"
+            }
+        ],
+        "Category": "",
+        "Description": "The stock TrashcanOS theme",
+        "Id": "org.trashcanos.desktop",
+        "License": "",
+        "Name": "Oxy",
+        "ServiceTypes": [
+            "Plasma/LookAndFeel"
+        ],
+        "Version": "0.01",
+        "Website": ""
+    },
+    "X-KDE-ParentApp": "",
+    "X-Plasma-MainScript": "defaults"
+}

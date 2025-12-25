@@ -138,7 +138,7 @@ ColorSchemeHash=465905853f7b01f63a484474722a441d99e2a157
 accentColorFromWallpaper=true
 
 [KDE]
-LookAndFeelPackage=org.kde.breezedark.desktop
+LookAndFeelPackage=org.trashcanos.desktop
 
 [WM]
 activeBackground=39,44,49

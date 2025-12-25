@@ -138,43 +138,15 @@ RUN rm -rf /usr/share/plasma/look-and-feel/org.valve.vapour.desktop \
            /usr/share/plasma/look-and-feel/org.valve.vgui.desktop \
            /usr/share/plasma/desktoptheme/Vapour
 
-# 4. INJECT CONFIGS INTO **SYSTEM-WIDE** DEFAULTS (/etc/xdg)
-# This ensures that even if /etc/skel fails, the OS defaults are YOURS.
+COPY assets/default-wpp.png /usr/share/wallpapers/default-wpp.png
+COPY assets/org.trashcanos.desktop /usr/share/plasma/look-and-feel/org.trashcanos.desktop
 COPY assets/config/kdeglobals /etc/xdg/kdeglobals
-COPY assets/config/kwinrc /etc/xdg/kwinrc
 COPY assets/config/plasmarc /etc/xdg/plasmarc
-COPY assets/config/plasma-org.kde.plasma.desktop-appletsrc /etc/xdg/plasma-org.kde.plasma.desktop-appletsrc
-COPY assets/config/kscreenlockerrc /etc/xdg/kscreenlockerrc
-COPY assets/config/plasmashellrc /etc/xdg/plasmashellrc
-COPY assets/config/ksplashrc /etc/xdg/ksplashrc
+COPY assets/config/kwinrc /etc/xdg/kwinrc
 COPY assets/config/kcminputrc /etc/xdg/kcminputrc
-
-# 5. INJECT CONFIGS INTO **USER** SKELETON (/etc/skel)
-COPY assets/config/kdeglobals /etc/skel/.config/kdeglobals
-COPY assets/config/kwinrc /etc/skel/.config/kwinrc
-COPY assets/config/plasmarc /etc/skel/.config/plasmarc
-COPY assets/config/plasma-org.kde.plasma.desktop-appletsrc /etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc
-COPY assets/config/kscreenlockerrc /etc/skel/.config/kscreenlockerrc
-COPY assets/config/plasmashellrc /etc/skel/.config/plasmashellrc
-COPY assets/config/ksplashrc /etc/skel/.config/ksplashrc
-COPY assets/config/kcminputrc /etc/skel/.config/kcminputrc
-COPY assets/config/kglobalshortcutsrc /etc/skel/.config/kglobalshortcutsrc
-COPY assets/config/powermanagementprofilesrc /etc/skel/.config/powermanagementprofilesrc
-COPY assets/config/Trolltech.conf /etc/skel/.config/Trolltech.conf
-COPY assets/config/kactivitymanagerdrc /etc/skel/.config/kactivitymanagerdrc
-COPY assets/config/kded5rc /etc/skel/.config/kded5rc
-COPY assets/config/gtkrc-2.0 /etc/skel/.config/gtkrc-2.0
-COPY assets/config/gtk-3.0 /etc/skel/.config/gtk-3.0
-COPY assets/config/gtk-4.0 /etc/skel/.config/gtk-4.0
-COPY assets/config/xsettingsd /etc/skel/.config/xsettingsd
-
-# 6. INSTALL & FIX WALLPAPER
-RUN mkdir -p /usr/share/wallpapers/TrashcanOS/contents/images
-COPY assets/default-wpp.png /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.png
-
-# 7. PERMISSIONS
-RUN chown -R root:root /etc/skel/.config && \
-    chmod -R 644 /etc/xdg/*rc || true
+COPY assets/config/kscreenlockerrc /etc/xdg/kscreenlockerrc
+COPY assets/config/plasma-org.kde.plasma.desktop-appletsrc /etc/xdg/plasma-org.kde.plasma.desktop-appletsrc
+RUN lookandfeeltool -a org.trashcanos.desktop
 ## ------------------------------------------------------------------------- ##
 
 ## ------------------- FINAL SCRUB: REMOVE BAZZITE IMAGES ------------------- ##
