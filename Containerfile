@@ -148,7 +148,7 @@ COPY assets/config/xsettingsd /etc/skel/.config/xsettingsd
 
 # 4. WALLPAPER INSTALLATION
 RUN mkdir -p /usr/share/wallpapers/TrashcanOS/contents/images
-COPY assets/default-wpp.jpg /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg
+COPY assets/default-wpp.png /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.png
 
 # 5. PERMISSIONS
 RUN chown -R root:root /etc/skel/.config

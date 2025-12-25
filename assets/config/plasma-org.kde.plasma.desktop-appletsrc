@@ -17,7 +17,7 @@ plugin=org.kde.plasma.folder
 wallpaperplugin=org.kde.image
 
 [Containments][26][Wallpaper][org.kde.image][General]
-Image=/usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg
+Image=/usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.png
 
 [Containments][27]
 activityId=
