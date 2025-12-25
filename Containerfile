@@ -146,7 +146,6 @@ COPY assets/config/kwinrc /etc/xdg/kwinrc
 COPY assets/config/kcminputrc /etc/xdg/kcminputrc
 COPY assets/config/kscreenlockerrc /etc/xdg/kscreenlockerrc
 COPY assets/config/plasma-org.kde.plasma.desktop-appletsrc /etc/xdg/plasma-org.kde.plasma.desktop-appletsrc
-RUN lookandfeeltool -a org.trashcanos.desktop
 ## ------------------------------------------------------------------------- ##
 
 ## ------------------- FINAL SCRUB: REMOVE BAZZITE IMAGES ------------------- ##
