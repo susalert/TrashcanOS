@@ -150,11 +150,6 @@ COPY assets/config/kscreenlockerrc /etc/xdg/kscreenlockerrc
 COPY assets/config/plasma-org.kde.plasma.desktop-appletsrc /etc/xdg/plasma-org.kde.plasma.desktop-appletsrc
 COPY assets/oxy /usr/share/sddm/themes/oxy
 
-RUN mkdir -p /etc/sddm.conf.d && \
-    cat > /etc/sddm.conf.d/10-theme.conf << 'EOF'
-[Theme]
-Current=oxy
-EOF
 RUN chmod -R a-w /usr/share/sddm/themes/oxy
 ## ------------------------------------------------------------------------- ##
 
