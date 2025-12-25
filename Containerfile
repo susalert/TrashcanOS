@@ -122,8 +122,34 @@ RUN rm -f \
 RUN echo 'echo "🍌 Welcome to TrashcanOS sAlpha. Prepare for chaos."' > /etc/profile.d/00-trashcan-welcome.sh
 ## -------------------------------------------------------------------- ##
 
-## ----------------------------  CUSTOMIZATION OF KDE PLASMA ---------------------------- ##
-# 1. VISUALS: Theme, Windows, Panel Layout
+## ------------------- ☢️ NUCLEAR BRANDING INJECTION ------------------- ##
+# 1. KILL THE FIRST-RUN WIZARD (YAFTI)
+# This tool runs on boot and often resets settings. We murder it here.
+RUN rm -f /usr/bin/yafti \
+          /usr/share/applications/yafti-go.desktop \
+          /etc/xdg/autostart/yafti-go.desktop \
+          /etc/xdg/autostart/ublue-firstboot.desktop \
+          /usr/share/applications/bazzite-portal.desktop \
+          /usr/bin/bazzite-portal
+
+# 2. DELETE THE BAZZITE THEME (VAPOUR) SOURCE
+# If these folders don't exist, KDE CANNOT switch back to them.
+RUN rm -rf /usr/share/plasma/look-and-feel/org.valve.vapour.desktop \
+           /usr/share/plasma/look-and-feel/org.valve.vgui.desktop \
+           /usr/share/plasma/desktoptheme/Vapour
+
+# 4. INJECT CONFIGS INTO **SYSTEM-WIDE** DEFAULTS (/etc/xdg)
+# This ensures that even if /etc/skel fails, the OS defaults are YOURS.
+COPY assets/config/kdeglobals /etc/xdg/kdeglobals
+COPY assets/config/kwinrc /etc/xdg/kwinrc
+COPY assets/config/plasmarc /etc/xdg/plasmarc
+COPY assets/config/plasma-org.kde.plasma.desktop-appletsrc /etc/xdg/plasma-org.kde.plasma.desktop-appletsrc
+COPY assets/config/kscreenlockerrc /etc/xdg/kscreenlockerrc
+COPY assets/config/plasmashellrc /etc/xdg/plasmashellrc
+COPY assets/config/ksplashrc /etc/xdg/ksplashrc
+COPY assets/config/kcminputrc /etc/xdg/kcminputrc
+
+# 5. INJECT CONFIGS INTO **USER** SKELETON (/etc/skel)
 COPY assets/config/kdeglobals /etc/skel/.config/kdeglobals
 COPY assets/config/kwinrc /etc/skel/.config/kwinrc
 COPY assets/config/plasmarc /etc/skel/.config/plasmarc
@@ -132,27 +158,24 @@ COPY assets/config/kscreenlockerrc /etc/skel/.config/kscreenlockerrc
 COPY assets/config/plasmashellrc /etc/skel/.config/plasmashellrc
 COPY assets/config/ksplashrc /etc/skel/.config/ksplashrc
 COPY assets/config/kcminputrc /etc/skel/.config/kcminputrc
-
-# 2. BEHAVIOR: Shortcuts, Power, & Activities
 COPY assets/config/kglobalshortcutsrc /etc/skel/.config/kglobalshortcutsrc
 COPY assets/config/powermanagementprofilesrc /etc/skel/.config/powermanagementprofilesrc
 COPY assets/config/Trolltech.conf /etc/skel/.config/Trolltech.conf
 COPY assets/config/kactivitymanagerdrc /etc/skel/.config/kactivitymanagerdrc
 COPY assets/config/kded5rc /etc/skel/.config/kded5rc
-
-# 3. LEGACY & GTK SUPPORT
 COPY assets/config/gtkrc-2.0 /etc/skel/.config/gtkrc-2.0
 COPY assets/config/gtk-3.0 /etc/skel/.config/gtk-3.0
 COPY assets/config/gtk-4.0 /etc/skel/.config/gtk-4.0
 COPY assets/config/xsettingsd /etc/skel/.config/xsettingsd
 
-# 4. WALLPAPER INSTALLATION
+# 6. INSTALL & FIX WALLPAPER
 RUN mkdir -p /usr/share/wallpapers/TrashcanOS/contents/images
 COPY assets/default-wpp.png /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.png
 
-# 5. PERMISSIONS
-RUN chown -R root:root /etc/skel/.config
-## ------------------------------------------------------------------------------------- ##
+# 7. PERMISSIONS
+RUN chown -R root:root /etc/skel/.config && \
+    chmod -R 644 /etc/xdg/*rc || true
+## ------------------------------------------------------------------------- ##
 
 ## ------------------- FINAL SCRUB: REMOVE BAZZITE IMAGES ------------------- ##
 # We remove the visual assets. Note: We use 'rm -rf' for folders and wildcards for files.
