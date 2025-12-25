@@ -3,7 +3,9 @@
 
 COMMAND="$1"
 ARG2="$2"
+# 🔑 The Keys
 LOCK_FILE="/etc/trashcan/dev-mode-enabled"
+RW_LOCK_FILE="/etc/trashcan/rw-mode-enabled" # <--- NEW KEY
 LOCK_DIR="/etc/trashcan"
 
 # Colors
@@ -39,7 +41,9 @@ if [ "$COMMAND" == "--enable-dev-tools" ]; then
     fi
 
 elif [ "$COMMAND" == "--disable-dev-tools" ]; then
+    # 🧹 CLEANUP: Remove BOTH keys to fully re-lock
     sudo rm -f "$LOCK_FILE"
+    sudo rm -f "$RW_LOCK_FILE"
     echo -e "${GREEN}Dev Tools DISABLED. System is safe.${NC}"
 
 elif [ "$COMMAND" == "--enable-whole-disk-rw" ]; then
@@ -64,6 +68,10 @@ elif [ "$COMMAND" == "--enable-whole-disk-rw" ]; then
 
     if [ "$confirmation" == "AGREE" ]; then
         echo -e "${RED}🔓: UNLOCKING FILESYSTEM...${NC}"
+
+        # 🔑 Create the Second Key so the wrapper allows the command
+        sudo touch "$RW_LOCK_FILE"
+
         # The Magic Command
         sudo rpm-ostree usroverlay
         echo ""

@@ -1,33 +1,41 @@
 #!/bin/bash
 # app - The TrashcanOS Package Manager Wrapper
+# 🍌 TrashcanOS: Chaos Verified.
 
 COMMAND="$1"
-PACKAGE="$2"
+TARGET="$2"
 CONTAINER_NAME="trashcan-box"
 
 # Colors
 GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# Helper: Ensure the backend container exists
+ensure_container() {
+    if ! podman container exists "$CONTAINER_NAME" > /dev/null 2>&1; then
+        echo -e "${GREEN}📦 Initializing the App Environment (First run only)...${NC}"
+        # Create a Fedora container silently
+        distrobox create -n "$CONTAINER_NAME" -i registry.fedoraproject.org/fedora:latest -Y > /dev/null
+    fi
+}
 
 show_help() {
     echo -e "🗑️  ${GREEN}TrashcanOS App Manager${NC}"
     echo "Usage:"
-    echo "  app install <package>   Install an app (e.g., firefox, vlc)"
-    echo "  app remove <package>    Remove an app"
-    echo "  app list                List installed apps"
+    echo "  app install <package|file>   Install an app (rpm, flatpak, or repo name)"
+    echo "  app remove <package>         Remove an app"
+    echo "  app update [package]         Update apps only (DNF)"
+    echo "  app upgrade [package]        Update System (Bootc) + Apps (DNF)"
+    echo "  app full-upgrade             Force update EVERYTHING (Flatpak, DNF, Bootc, RPM-OSTree)"
+    echo "  app list                     List installed apps"
 }
 
 if [ -z "$COMMAND" ]; then
     show_help
     exit 1
-fi
-
-# Ensure the backend container exists
-if ! podman container exists "$CONTAINER_NAME" > /dev/null 2>&1; then
-    echo -e "${GREEN}📦 Initializing the App Environment (First run only)...${NC}"
-    # Create a Fedora container silently
-    distrobox create -n "$CONTAINER_NAME" -i registry.fedoraproject.org/fedora:latest -Y > /dev/null
 fi
 
 case "$COMMAND" in
@@ -38,10 +46,8 @@ case "$COMMAND" in
         fi
 
         # --- 1. HANDLE FLATPAKS (Host Level) ---
-        # Flatpaks are native to the host, so we don't use the container.
         if [[ "$TARGET" == *.flatpakref ]] || [[ "$TARGET" == *.flatpak ]]; then
              echo -e "${GREEN}📦 Detected Flatpak file. Installing to System (User)...${NC}"
-             # We use the standard flatpak command
              flatpak install -y "$TARGET"
              echo -e "${GREEN}✅ Flatpak installed!${NC}"
              exit 0
@@ -61,7 +67,7 @@ case "$COMMAND" in
                 exit 1
             fi
         else
-            # Standard repo package (firefox, neofetch, etc)
+            # Standard repo package
             echo -e "${GREEN}⬇️  Downloading and installing $TARGET...${NC}"
             distrobox enter "$CONTAINER_NAME" -- sudo dnf install -y "$TARGET"
         fi
@@ -70,36 +76,90 @@ case "$COMMAND" in
         echo -e "${GREEN}🔗 Exporting to host menu...${NC}"
         distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-app "$TARGET" 2>/dev/null || true
         distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-apps
-
         echo -e "${GREEN}✅ Installation complete!${NC}"
         ;;
 
     remove)
-        if [ -z "$PACKAGE" ]; then
+        if [ -z "$TARGET" ]; then
             echo -e "${RED}Error: What do you want to remove?${NC}"
             exit 1
         fi
-        distrobox enter "$CONTAINER_NAME" -- sudo dnf remove -y "$PACKAGE"
-        echo -e "${GREEN}🗑️  $PACKAGE removed.${NC}"
+        ensure_container
+        distrobox enter "$CONTAINER_NAME" -- sudo dnf remove -y "$TARGET"
+        echo -e "${GREEN}🗑️  $TARGET removed.${NC}"
         ;;
 
     update)
-        echo -e "${GREEN}🔄 Checking for updates...${NC}"
-        # Just refresh metadata, don't install yet
-        distrobox enter "$CONTAINER_NAME" -- sudo dnf check-update
+        ensure_container
+        if [ -z "$TARGET" ]; then
+            # No argument: Update ALL Apps
+            echo -e "${GREEN}📦 Updating all Container Apps...${NC}"
+            distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
+            echo -e "${GREEN}🔗 Refreshing menu links...${NC}"
+            distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-apps
+            echo -e "${GREEN}✅ App updates complete.${NC}"
+        else
+            # Argument provided: Update specific App
+            echo -e "${GREEN}📦 Updating package: $TARGET...${NC}"
+            distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y "$TARGET"
+            echo -e "${GREEN}✅ Update complete.${NC}"
+        fi
         ;;
 
     upgrade)
-        echo -e "${GREEN}⬆️  Upgrading all apps...${NC}"
-        # Run the actual upgrade
-        distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade -y
-        # Refresh menu icons in case they changed
-        echo -e "${GREEN}🔗 Refreshing menu links...${NC}"
+        # 1. Update Apps (Same logic as 'update')
+        ensure_container
+        if [ -z "$TARGET" ]; then
+            echo -e "${BLUE}============ 1/2: UPDATING APPS ============${NC}"
+            distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
+            distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-apps
+
+            echo -e "${BLUE}============ 2/2: UPDATING SYSTEM (Bootc) ============${NC}"
+            # We use sudo here to call the host bootc
+            echo -e "${YELLOW}Checking for TrashcanOS Core Updates...${NC}"
+            sudo /usr/bin/bootc upgrade
+
+            echo -e "${GREEN}✅ System & App Upgrade Complete.${NC}"
+        else
+            # If user specifies a package, just update that package (System packages can't be single-upgraded easily)
+            echo -e "${GREEN}📦 Updating package: $TARGET...${NC}"
+            distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y "$TARGET"
+        fi
+        ;;
+
+    full-upgrade)
+        if [ ! -z "$TARGET" ]; then
+             echo -e "${RED}Error: 'full-upgrade' does not accept package names. It updates EVERYTHING.${NC}"
+             exit 1
+        fi
+
+        echo -e "${RED}INITIATING FULL SYSTEM OVERHAUL${NC}"
+
+        # 1. Flatpaks
+        echo -e "${BLUE}📦 [1/4] Updating Flatpaks...${NC}"
+        flatpak update -y
+
+        # 2. Containers
+        echo -e "${BLUE}🧊 [2/4] Updating Container Apps...${NC}"
+        ensure_container
+        distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
         distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-apps
-        echo -e "${GREEN}✅ Upgrade complete.${NC}"
+
+        # 3. System Base (Bootc)
+        echo -e "${BLUE}💿 [3/4] Updating TrashcanOS Core...${NC}"
+        sudo /usr/bin/bootc upgrade
+
+        # 4. Layered Packages (RPM-OSTree) - The "Nuclear" option
+        # We bypass the 'locked-command-wrapper' by calling the binary directly
+        echo -e "${BLUE}🛡️  [4/4] Updating Layered Drivers...${NC}"
+        sudo /usr/bin/rpm-ostree upgrade
+
+        echo -e "${GREEN}✅ FULL SYSTEM UPGRADE COMPLETE!${NC}"
+        echo -e "${YELLOW}ℹ️  Please reboot if System/Core updates were applied.${NC}"
         ;;
 
     list)
+        ensure_container
         distrobox enter "$CONTAINER_NAME" -- dnf list installed --userinstalled
         ;;
 
