@@ -81,79 +81,49 @@ RUN chmod +x /usr/bin/app \
 RUN mkdir -p /etc/trashcan
 ## ------------------------------------------------------------------ ##
 
-## ------------------- OS IDENTITY ------------------- ##
+## ------------------- OS IDENTITY & CLEANUP ------------------- ##
+# 1. Modify the Base OS Release File (Consolidated)
 RUN sed -i \
-  -e 's/^NAME=.*/NAME="TrashcanOS"/' \
-  -e 's/^PRETTY_NAME=.*/PRETTY_NAME="TrashcanOS sAlpha"/' \
-  -e 's/^ID=.*/ID=trashcanos/' \
-  -e 's/^ID_LIKE=.*/ID_LIKE="fedora"/' \
-  -e 's/^VARIANT=.*/VARIANT="General Drivers"/' \
-  -e 's/^LOGO=.*/LOGO=trashcanos/' \
-  /usr/lib/os-release
-## --------------------------------------------------- ##
+    # Rename the OS
+    -e 's/^NAME=.*/NAME="TrashcanOS"/' \
+    -e 's/^PRETTY_NAME=.*/PRETTY_NAME="TrashcanOS sAlpha"/' \
+    -e 's/^ID=.*/ID=trashcanos/' \
+    -e 's/^ID_LIKE=.*/ID_LIKE="fedora"/' \
+    -e 's/^VARIANT=.*/VARIANT="General Drivers"/' \
+    -e 's/^LOGO=.*/LOGO=trashcanos/' \
+    -e 's/^BOOTLOADER_NAME=.*/BOOTLOADER_NAME="TrashcanOS"/' \
+    # Fix the URLs (Bazzite -> Trashcan)
+    -e 's|bazzite.gg|trashcanos.org|g' \
+    -e 's|universal-blue:bazzite|susalert:trashcanos|g' \
+    -e 's|DEFAULT_HOSTNAME="bazzite"|DEFAULT_HOSTNAME="trashcanos"|g' \
+    # Nuke the Ghost Links (Delete lines starting with these keys)
+    -e '/^HOME_URL=/d' \
+    -e '/^DOCUMENTATION_URL=/d' \
+    -e '/^BUG_REPORT_URL=/d' \
+    -e '/^SUPPORT_URL=/d' \
+    -e '/^SUPPORT_END=/d' \
+    -e '/^IMAGE_ID=/d' \
+    -e '/^VARIANT_ID=/d' \
+    /usr/lib/os-release
 
-## ------------------- TRASHCANOS ID ------------------- ##
+# 2. Create the Custom Release File
 RUN printf "NAME=TrashcanOS\nVERSION=sAlpha\nEDITION=General\nDE=Plasma\n" > /usr/lib/trashcanos-release
 
-# Link it so the system can find it
-RUN ln -sf /usr/lib/trashcanos-release /etc/trashcanos-release
-RUN ln -sf /usr/lib/trashcanos-release /etc/system-release
+# 3. Link it so the system sees it
+RUN ln -sf /usr/lib/trashcanos-release /etc/trashcanos-release && \
+    ln -sf /usr/lib/trashcanos-release /etc/system-release
 
-# 1. Nuke the Bazzite Welcome Scripts 🗑️
+# 4. Cleanup Bazzite Scripts
 RUN rm -f /etc/profile.d/bazzite-neofetch.sh \
           /etc/profile.d/user-motd.sh \
           /etc/profile.d/00-bazzite-welcome.sh 2>/dev/null || true
 
-# 2. Add our own simple welcome message (Optional) ## Remove later on release
+# 5. Add Trashcan Welcome
 RUN echo 'echo "🍌 Welcome to TrashcanOS sAlpha. Prepare for chaos."' > /etc/profile.d/00-trashcan-welcome.sh
 
-# 3. Fix the Hostname permanently
+# 6. Set Hostname
 RUN echo "trashcanos" > /etc/hostname
-
-# 4. Scrub the remaining URLs and Metadata in os-release
-# We use sed to replace the remaining "bazzite" references with "trashcanos"
-RUN sed -i \
-    -e 's|bazzite.gg|trashcanos.org|g' \
-    -e 's|universal-blue:bazzite|susalert:trashcanos|g' \
-    -e 's|DEFAULT_HOSTNAME="bazzite"|DEFAULT_HOSTNAME="trashcanos"|g'
-    /usr/lib/os-release
-RUN sed -i 's/^BOOTLOADER_NAME=.*/BOOTLOADER_NAME="TrashcanOS"/' /usr/lib/os-release
-
-RUN sed -i '/^HOME_URL=/d' /etc/os-release && \
-    sed -i '/^DOCUMENTATION_URL=/d' /etc/os-release && \
-    sed -i '/^BUG_REPORT_URL=/d' /etc/os-release && \
-    sed -i '/^SUPPORT_URL=/d' /etc/os-release && \
-    sed -i '/^SUPPORT_END=/d' /etc/os-release && \
-    sed -i '/^IMAGE_ID=/d' /etc/os-release && \
-    sed -i '/^VARIANT_ID=/d' /etc/os-release
-## --------------------------------------------------- ##
-
-## --------------------------------------------- VISUAL CLEANUP --------------------------------------------- ##
-RUN plymouth-set-default-theme spinner
-
-RUN mkdir -p /usr/share/backgrounds/trashcanos
-COPY assets/TrashcanOS-default.jpg /usr/share/backgrounds/trashcanos/login.jpg
-
-RUN printf "[Theme]\nCurrent=breeze\n" > /etc/sddm.conf.d/kde_settings.conf
-
-RUN mkdir -p /usr/share/wallpapers/TrashcanOS/contents/images
-
-COPY assets/TrashcanOS-default.jpg /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg
-
-RUN ln -sf /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg /usr/share/wallpapers/Next/contents/images/1920x1080.png && \
-    ln -sf /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg /usr/share/wallpapers/Next/contents/images/2560x1440.png && \
-    ln -sf /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg /usr/share/wallpapers/Next/contents/images/1366x768.png
-
-RUN mkdir -p /usr/share/backgrounds/trashcanos && \
-    ln -sf /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg /usr/share/backgrounds/trashcanos/login.jpg
-
-RUN [ -f /etc/default/grub ] && sed -i 's/^GRUB_THEME=.*/#GRUB_THEME="disabled"/' /etc/default/grub || true
-
-RUN rm -f /etc/xdg/kcm-about-distrorc \
-          /usr/share/kservices5/bazzite-about-distro.desktop \
-          /usr/share/applications/bazzite-documentation.desktop \
-          /etc/profile.d/bazzite-neofetch.sh 2>/dev/null || true
-## ---------------------------------------------------------------------------------------------------------- ##
+## ------------------------------------------------------------- ##
 
 ## -------------------------------- LOGO FIX -------------------------------- ##
 COPY assets/trashcanos.svg /usr/share/icons/hicolor/scalable/apps/trashcanos.svg
