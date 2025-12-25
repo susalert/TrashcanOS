@@ -121,3 +121,55 @@ RUN rm -f \
 # Add Trashcan Welcome Script
 RUN echo 'echo "🍌 Welcome to TrashcanOS sAlpha. Prepare for chaos."' > /etc/profile.d/00-trashcan-welcome.sh
 ## -------------------------------------------------------------------- ##
+
+## ----------------------------  CUSTOMIZATION OF KDE PLASMA ---------------------------- ##
+# 1. VISUALS: Theme, Windows, Panel Layout
+COPY assets/config/kdeglobals /etc/skel/.config/kdeglobals
+COPY assets/config/kwinrc /etc/skel/.config/kwinrc
+COPY assets/config/plasmarc /etc/skel/.config/plasmarc
+COPY assets/config/plasma-org.kde.plasma.desktop-appletsrc /etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc
+COPY assets/config/kscreenlockerrc /etc/skel/.config/kscreenlockerrc
+COPY assets/config/plasmashellrc /etc/skel/.config/plasmashellrc
+COPY assets/config/ksplashrc /etc/skel/.config/ksplashrc
+COPY assets/config/kcminputrc /etc/skel/.config/kcminputrc
+
+# 2. BEHAVIOR: Shortcuts, Power, & Activities
+COPY assets/config/kglobalshortcutsrc /etc/skel/.config/kglobalshortcutsrc
+COPY assets/config/powermanagementprofilesrc /etc/skel/.config/powermanagementprofilesrc
+COPY assets/config/Trolltech.conf /etc/skel/.config/Trolltech.conf
+COPY assets/config/kactivitymanagerdrc /etc/skel/.config/kactivitymanagerdrc
+COPY assets/config/kded5rc /etc/skel/.config/kded5rc
+
+# 3. LEGACY & GTK SUPPORT
+COPY assets/config/gtkrc-2.0 /etc/skel/.config/gtkrc-2.0
+COPY assets/config/gtk-3.0 /etc/skel/.config/gtk-3.0
+COPY assets/config/gtk-4.0 /etc/skel/.config/gtk-4.0
+COPY assets/config/xsettingsd /etc/skel/.config/xsettingsd
+
+# 4. WALLPAPER INSTALLATION
+RUN mkdir -p /usr/share/wallpapers/TrashcanOS/contents/images
+COPY assets/default-wpp.jpg /usr/share/wallpapers/TrashcanOS/contents/images/1920x1080.jpg
+
+# 5. PERMISSIONS
+RUN chown -R root:root /etc/skel/.config
+## ------------------------------------------------------------------------------------- ##
+
+## ------------------- FINAL SCRUB: REMOVE BAZZITE IMAGES ------------------- ##
+# We remove the visual assets. Note: We use 'rm -rf' for folders and wildcards for files.
+# COULD BREAK THE SYSTEM BUILD. REMOVE IF YES
+
+RUN rm -rf \
+    # 1. The Bazzite Wallpapers
+    /usr/share/wallpapers/Bazzite \
+    /usr/share/wallpapers/DeepBlue \
+    /usr/share/wallpapers/F39 \
+    # 2. The Bazzite Icons (The big search results you found)
+    /usr/share/icons/hicolor/*/apps/bazzite* \
+    /usr/share/pixmaps/bazzite* \
+    # 3. The "Desktop Portal" images (screenshots used in their setup tool)
+    /usr/share/bazzite/screenshots \
+    2>/dev/null || true
+
+# Double check we didn't break the icon cache (Optional but good practice)
+RUN gtk-update-icon-cache /usr/share/icons/hicolor || true
+## -------------------------------------------------------------------------- ##
