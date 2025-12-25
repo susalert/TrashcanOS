@@ -87,7 +87,7 @@ RUN sed -i \
   -e 's/^PRETTY_NAME=.*/PRETTY_NAME="TrashcanOS sAlpha"/' \
   -e 's/^ID=.*/ID=trashcanos/' \
   -e 's/^ID_LIKE=.*/ID_LIKE="fedora"/' \
-  -e 's/^VARIANT=.*/VARIANT="Immutable Desktop"/' \
+  -e 's/^VARIANT=.*/VARIANT="General Drivers"/' \
   -e 's/^LOGO=.*/LOGO=trashcanos/' \
   /usr/lib/os-release
 ## --------------------------------------------------- ##
@@ -98,12 +98,13 @@ RUN printf "NAME=TrashcanOS\nVERSION=sAlpha\nEDITION=General\nDE=Plasma\n" > /us
 # Link it so the system can find it
 RUN ln -sf /usr/lib/trashcanos-release /etc/trashcanos-release
 RUN ln -sf /usr/lib/trashcanos-release /etc/system-release
+
 # 1. Nuke the Bazzite Welcome Scripts 🗑️
 RUN rm -f /etc/profile.d/bazzite-neofetch.sh \
           /etc/profile.d/user-motd.sh \
           /etc/profile.d/00-bazzite-welcome.sh 2>/dev/null || true
 
-# 2. Add our own simple welcome message (Optional)
+# 2. Add our own simple welcome message (Optional) ## Remove later on release
 RUN echo 'echo "🍌 Welcome to TrashcanOS sAlpha. Prepare for chaos."' > /etc/profile.d/00-trashcan-welcome.sh
 
 # 3. Fix the Hostname permanently
@@ -114,10 +115,17 @@ RUN echo "trashcanos" > /etc/hostname
 RUN sed -i \
     -e 's|bazzite.gg|trashcanos.org|g' \
     -e 's|universal-blue:bazzite|susalert:trashcanos|g' \
-    -e 's|DEFAULT_HOSTNAME="bazzite"|DEFAULT_HOSTNAME="trashcanos"|g' \
-    -e 's|VARIANT_ID=bazzite|VARIANT_ID=trashcanos|g' \
+    -e 's|DEFAULT_HOSTNAME="bazzite"|DEFAULT_HOSTNAME="trashcanos"|g'
     /usr/lib/os-release
 RUN sed -i 's/^BOOTLOADER_NAME=.*/BOOTLOADER_NAME="TrashcanOS"/' /usr/lib/os-release
+
+RUN sed -i '/^HOME_URL=/d' /etc/os-release && \
+    sed -i '/^DOCUMENTATION_URL=/d' /etc/os-release && \
+    sed -i '/^BUG_REPORT_URL=/d' /etc/os-release && \
+    sed -i '/^SUPPORT_URL=/d' /etc/os-release && \
+    sed -i '/^SUPPORT_END=/d' /etc/os-release && \
+    sed -i '/^IMAGE_ID=/d' /etc/os-release && \
+    sed -i '/^VARIANT_ID=/d' /etc/os-release
 ## --------------------------------------------------- ##
 
 ## --------------------------------------------- VISUAL CLEANUP --------------------------------------------- ##

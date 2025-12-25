@@ -45,6 +45,15 @@ case "$COMMAND" in
             exit 1
         fi
 
+        # --- SMART CHECK: Is it already installed? ---
+        ensure_container
+        if distrobox enter "$CONTAINER_NAME" -- rpm -q "$TARGET" > /dev/null 2>&1; then
+            echo -e "${YELLOW}⚠️  '$TARGET' is already installed.${NC}"
+            echo -e "Did you mean to update it? Run: ${GREEN}app update $TARGET${NC}"
+            exit 0
+        fi
+        # ---------------------------------------------
+
         # --- 1. HANDLE FLATPAKS (Host Level) ---
         if [[ "$TARGET" == *.flatpakref ]] || [[ "$TARGET" == *.flatpak ]]; then
              echo -e "${GREEN}📦 Detected Flatpak file. Installing to System (User)...${NC}"
@@ -75,7 +84,7 @@ case "$COMMAND" in
         # Export to menu
         echo -e "${GREEN}🔗 Exporting to host menu...${NC}"
         distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-app "$TARGET" 2>/dev/null || true
-        distrobox enter "$CONTAINER_NAME" -- distrobox-export --export-apps
+        # Removed invalid --export-apps flag here
         echo -e "${GREEN}✅ Installation complete!${NC}"
         ;;
 
@@ -121,7 +130,7 @@ case "$COMMAND" in
 
             echo -e "${GREEN}✅ System & App Upgrade Complete.${NC}"
         else
-            # If user specifies a package, just update that package (System packages can't be single-upgraded easily)
+            # If user specifies a package, just update that package
             echo -e "${GREEN}📦 Updating package: $TARGET...${NC}"
             distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y "$TARGET"
         fi
@@ -133,7 +142,7 @@ case "$COMMAND" in
              exit 1
         fi
 
-        echo -e "${RED}INITIATING FULL SYSTEM OVERHAUL${NC}"
+        echo -e "${RED}☢️  INITIATING FULL SYSTEM OVERHAUL ☢️${NC}"
 
         # 1. Flatpaks
         echo -e "${BLUE}📦 [1/4] Updating Flatpaks...${NC}"
@@ -150,7 +159,6 @@ case "$COMMAND" in
         sudo /usr/bin/bootc upgrade
 
         # 4. Layered Packages (RPM-OSTree) - The "Nuclear" option
-        # We bypass the 'locked-command-wrapper' by calling the binary directly
         echo -e "${BLUE}🛡️  [4/4] Updating Layered Drivers...${NC}"
         sudo /usr/bin/rpm-ostree upgrade
 
