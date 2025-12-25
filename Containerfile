@@ -135,16 +135,12 @@ COPY assets/trashcanos.svg /usr/share/icons/hicolor/scalable/apps/trashcanos.svg
 # 3. Ensure Plymouth (Boot Screen) is clean
 RUN plymouth-set-default-theme spinner
 
-RUN rm -f \
-    # "Bazzite Portal Setup"
-    /usr/share/applications/bazzite-portal*.desktop \
-    # "Documentation" (The Bazzite docs link)
-    /usr/share/applications/bazzite-documentation.desktop \
-    /usr/share/applications/org.project_bluefin.bluefin-docs.desktop \
-    # "System Update" (The manual ujust updater)
-    /usr/share/applications/system-update.desktop \
-    /usr/share/applications/bazzite-update.desktop \
-    2>/dev/null || true
+RUN rm -f /usr/share/applications/*bazzite*.desktop \
+          /usr/share/applications/*bluefin*.desktop \
+          /usr/share/applications/*discourse*.desktop \
+          /usr/share/applications/system-update.desktop \
+          /usr/share/applications/org.gnome.Software.desktop \
+          2>/dev/null || true
 ## ------------------------------------------------------------- ##
 
 ## -------------------------------- LOGO FIX -------------------------------- ##
