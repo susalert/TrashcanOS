@@ -140,7 +140,7 @@ case "$COMMAND" in
              exit 1
         fi
 
-        echo -e "${RED}☢️  INITIATING FULL SYSTEM OVERHAUL ☢️${NC}"
+        echo -e "${RED}⚠️ WARNING: Performing a FULL SYSTEM overhaul${NC}"
 
         # 1. Flatpaks
         echo -e "${BLUE}📦 [1/4] Updating Flatpaks...${NC}"
