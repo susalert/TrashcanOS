@@ -19,5 +19,11 @@
         "Website": ""
     },
     "X-KDE-ParentApp": "",
-    "X-Plasma-MainScript": "defaults"
+    "X-Plasma-MainScript": "defaults",
+    "Defaults": {
+    "plasmaTheme": "breeze-dark",
+    "wallpaperplugin": "org.kde.image",
+    "wallpaper": "Next",
+    "layout": "org.kde.plasma.desktop.defaultPanel"
+    }
 }

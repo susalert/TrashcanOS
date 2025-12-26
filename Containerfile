@@ -142,6 +142,8 @@ COPY assets/default-light.png /usr/share/wallpapers/default-light.png
 COPY assets/default-dark.png /usr/share/wallpapers/default-dark.png
 COPY assets/org.trashcanos.desktop /usr/share/plasma/look-and-feel/org.trashcanos.desktop
 COPY assets/org.trashcanosdark.desktop /usr/share/plasma/look-and-feel/org.trashcanosdark.desktop
+COPY assets/Oxy /usr/share/plasma/desktoptheme/Oxy
+COPY assets/OxyDark /usr/share/plasma/desktoptheme/OxyDark
 COPY assets/config/kdeglobals /etc/xdg/kdeglobals
 COPY assets/config/plasmarc /etc/xdg/plasmarc
 COPY assets/config/kwinrc /etc/xdg/kwinrc

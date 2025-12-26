@@ -1,0 +1,5 @@
+[Settings]
+FallbackTheme=breeze-dark
+
+[AdaptiveTransparency]
+enabled=true
