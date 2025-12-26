@@ -151,6 +151,8 @@ COPY assets/config/kcminputrc /etc/xdg/kcminputrc
 COPY assets/config/kscreenlockerrc /etc/xdg/kscreenlockerrc
 COPY assets/config/plasma-org.kde.plasma.desktop-appletsrc /etc/xdg/plasma-org.kde.plasma.desktop-appletsrc
 COPY assets/oxy /usr/share/sddm/themes/oxy
+COPY assets/Oxy.colors /usr/share/color-schemes/Oxy.colors
+COPY assets/OxyDark.colors /usr/share/color-schemes/OxyDark.colors
 
 RUN chmod -R a-w /usr/share/sddm/themes/oxy
 ## ------------------------------------------------------------------------- ##
