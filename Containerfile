@@ -87,7 +87,6 @@ COPY assets/trashcanos.svg /usr/share/icons/hicolor/scalable/apps/trashcanos.svg
 
 # 4. Set Hostname
 RUN echo "trashcanos" > /etc/hostname
-RUN echo "trashcanos" | sudo tee /etc/hostname
 
 
 # 5. Plymouth Theme
