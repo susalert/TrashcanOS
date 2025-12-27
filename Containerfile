@@ -23,12 +23,10 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 RUN bootc container lint
 
 ## ----------- BAZAAR DISPOSAL & EDITOR SETUP ----------- ##
-RUN sed -i 's/firefox//g' /etc/dnf/dnf.conf || true
 RUN rpm-ostree override remove bazaar && \
     rpm-ostree install plasma-discover && \
     rpm-ostree override remove vim-enhanced && \
-    rpm-ostree install neovim && \
-    rpm-ostree install firefox
+    rpm-ostree install neovim
 
 ENV EDITOR=nvim
 ENV VISUAL=nvim
