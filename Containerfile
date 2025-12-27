@@ -23,6 +23,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 RUN bootc container lint
 
 ## ----------- BAZAAR DISPOSAL & EDITOR SETUP ----------- ##
+RUN sed -i 's/firefox//g' /etc/dnf/dnf.conf || true
 RUN rpm-ostree override remove bazaar && \
     rpm-ostree install plasma-discover && \
     rpm-ostree override remove vim-enhanced && \
@@ -88,6 +89,8 @@ COPY assets/trashcanos.svg /usr/share/icons/hicolor/scalable/apps/trashcanos.svg
 
 # 4. Set Hostname
 RUN echo "trashcanos" > /etc/hostname
+RUN echo "trashcanos" | sudo tee /etc/hostname
+
 
 # 5. Plymouth Theme
 RUN plymouth-set-default-theme spinner
