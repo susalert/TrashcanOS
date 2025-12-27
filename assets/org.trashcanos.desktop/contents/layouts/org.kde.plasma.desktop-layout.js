@@ -10,7 +10,7 @@ var tasks = panel.addWidget("org.kde.plasma.icontasks");
 tasks.currentConfigGroup = ["General"];
 tasks.writeConfig("launchers", [
     "applications:org.kde.dolphin.desktop",
-    "applications:org.kde.konsole.desktop",
+    "applications:org.gnome.Ptyxis.desktop",
     "applications:org.kde.firefox.desktop"
 ]);
 panel.addWidget("org.kde.plasma.systemtray")

@@ -130,13 +130,26 @@ RUN rm -f /usr/bin/yafti \
           /etc/xdg/autostart/yafti-go.desktop \
           /etc/xdg/autostart/ublue-firstboot.desktop \
           /usr/share/applications/bazzite-portal.desktop \
-          /usr/bin/bazzite-portal
+          /usr/bin/bazzite-portal \
+          /usr/share/applications/bazzite-documentation.desktop
 
+RUN rm -f /usr/share/glib-2.0/schemas/*bazzite* \
+    && glib-compile-schemas /usr/share/glib-2.0/schemas
+
+RUN rm -f /usr/lib/systemd/system/bazzite-hardware-setup.service \
+          /usr/bin/bazzite-hardware-setup
 # 2. DELETE THE BAZZITE THEME (VAPOUR) SOURCE
 # If these folders don't exist, KDE CANNOT switch back to them.
 RUN rm -rf /usr/share/plasma/look-and-feel/org.valve.vapour.desktop \
            /usr/share/plasma/look-and-feel/org.valve.vgui.desktop \
            /usr/share/plasma/desktoptheme/Vapour
+
+RUN rm -rf /usr/share/ublue-os \
+           /usr/share/bazzite \
+           /etc/profile.d/ublue-os-just.sh
+
+RUN rm -f /usr/bin/bazzite* \
+          /usr/libexec/bazzite*
 
 COPY assets/default-light.png /usr/share/wallpapers/default-light.png
 COPY assets/default-dark.png /usr/share/wallpapers/default-dark.png
