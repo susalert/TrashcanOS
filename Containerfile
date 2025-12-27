@@ -26,7 +26,8 @@ RUN bootc container lint
 RUN rpm-ostree override remove bazaar && \
     rpm-ostree install plasma-discover && \
     rpm-ostree override remove vim-enhanced && \
-    rpm-ostree install neovim
+    rpm-ostree install neovim && \
+    rpm-ostree install firefox
 
 ENV EDITOR=nvim
 ENV VISUAL=nvim
