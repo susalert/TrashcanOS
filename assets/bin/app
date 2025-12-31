@@ -13,12 +13,32 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Helper: Ensure the backend container exists
+# Helper: Ensure the backend container exists and is ALIVE
 ensure_container() {
+    # 1. Check if it exists at all
     if ! podman container exists "$CONTAINER_NAME" > /dev/null 2>&1; then
         echo -e "${GREEN}📦 Initializing the App Environment (First run only)...${NC}"
-        # Create a Fedora container silently
-        distrobox create -n "$CONTAINER_NAME" -i registry.fedoraproject.org/fedora:latest -Y > /dev/null
+        # Use quay.io for better speed/reliability
+        distrobox create -n "$CONTAINER_NAME" -i quay.io/fedora/fedora:latest -Y > /dev/null
+        
+        # --- CRITICAL FIX: FORCE INIT ---
+        # We enter once with a dummy command to let Distrobox set up basic packages
+        echo -e "${BLUE}⚙️  Setting up container internals...${NC}"
+        distrobox enter -T "$CONTAINER_NAME" -- true > /dev/null 2>&1
+        return
+    fi
+
+    # 2. Check if it is actually broken (Zombie check)
+    # We use -T here to avoid TTY errors during the check
+    if ! distrobox enter -T "$CONTAINER_NAME" -- true > /dev/null 2>&1; then
+        echo -e "${RED}⚠️  Detected corrupted App Environment!${NC}"
+        echo -e "${YELLOW}♻️  Rebuilding trashcan-box...${NC}"
+        distrobox rm "$CONTAINER_NAME" --force > /dev/null 2>&1
+        
+        # Recreate
+        distrobox create -n "$CONTAINER_NAME" -i quay.io/fedora/fedora:latest -Y > /dev/null
+        # Init again
+        distrobox enter -T "$CONTAINER_NAME" -- true > /dev/null 2>&1
     fi
 }
 
@@ -47,7 +67,8 @@ case "$COMMAND" in
 
         # --- SMART CHECK: Is it already installed? ---
         ensure_container
-        if distrobox enter "$CONTAINER_NAME" -- rpm -q "$TARGET" > /dev/null 2>&1; then
+        # Added -T
+        if distrobox enter -T "$CONTAINER_NAME" -- rpm -q "$TARGET" > /dev/null 2>&1; then
             echo -e "${YELLOW}⚠️  '$TARGET' is already installed.${NC}"
             echo -e "Did you mean to update it? Run: ${GREEN}app update $TARGET${NC}"
             exit 0
@@ -70,7 +91,16 @@ case "$COMMAND" in
             if [ -f "$TARGET" ]; then
                 echo -e "${GREEN}📦 Detected local RPM file. Installing in container...${NC}"
                 RPM_PATH=$(realpath "$TARGET")
-                distrobox enter "$CONTAINER_NAME" -- sudo dnf install -y "$RPM_PATH"
+                
+                # Added -T
+                if distrobox enter -T "$CONTAINER_NAME" -- sudo dnf install -y "$RPM_PATH"; then
+                    echo -e "${GREEN}🔗 Exporting to host menu...${NC}"
+                    distrobox enter -T "$CONTAINER_NAME" -- distrobox-export --app "$TARGET" 2>/dev/null || true
+                    echo -e "${GREEN}✅ Installation complete!${NC}"
+                else
+                    echo -e "${RED}❌ Installation FAILED.${NC}"
+                    exit 1
+                fi
             else
                 echo -e "${RED}Error: File '$TARGET' not found.${NC}"
                 exit 1
@@ -78,15 +108,17 @@ case "$COMMAND" in
         else
             # Standard repo package
             echo -e "${GREEN}⬇️  Downloading and installing $TARGET...${NC}"
-            distrobox enter "$CONTAINER_NAME" -- sudo dnf install -y "$TARGET"
+            
+            # Added -T to fix "Inappropriate ioctl for device"
+            if distrobox enter -T "$CONTAINER_NAME" -- sudo dnf install -y "$TARGET"; then
+                echo -e "${GREEN}🔗 Exporting to host menu...${NC}"
+                distrobox enter -T "$CONTAINER_NAME" -- distrobox-export --app "$TARGET" 2>/dev/null || true
+                echo -e "${GREEN}✅ Installation complete!${NC}"
+            else
+                echo -e "${RED}❌ Installation FAILED.${NC}"
+                exit 1
+            fi
         fi
-
-        # Export to menu
-        echo -e "${GREEN}🔗 Exporting to host menu...${NC}"
-        distrobox enter "$CONTAINER_NAME" -- distrobox-export --app "$TARGET" 2>/dev/null || true
-        # 🗑️ REMOVED THE INVALID FLAG HERE 🗑️
-
-        echo -e "${GREEN}✅ Installation complete!${NC}"
         ;;
 
     remove)
@@ -95,7 +127,15 @@ case "$COMMAND" in
             exit 1
         fi
         ensure_container
-        distrobox enter "$CONTAINER_NAME" -- sudo dnf remove -y "$TARGET"
+        
+        # --- FIX: REMOVE SHORTCUT FIRST ---
+        echo -e "${YELLOW}🧹 Cleaning up shortcuts for $TARGET...${NC}"
+        # Added -T
+        distrobox enter -T "$CONTAINER_NAME" -- distrobox-export --delete "$TARGET" 2>/dev/null || true
+        # ----------------------------------
+
+        # Added -T
+        distrobox enter -T "$CONTAINER_NAME" -- sudo dnf remove -y "$TARGET"
         echo -e "${GREEN}🗑️  $TARGET removed.${NC}"
         ;;
 
@@ -104,13 +144,14 @@ case "$COMMAND" in
         if [ -z "$TARGET" ]; then
             # No argument: Update ALL Apps
             echo -e "${GREEN}📦 Updating all Container Apps...${NC}"
-            distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
-            # Note: No need to re-export apps, dnf handles the binary updates in place.
+            # Added -T
+            distrobox enter -T "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
             echo -e "${GREEN}✅ App updates complete.${NC}"
         else
             # Argument provided: Update specific App
             echo -e "${GREEN}📦 Updating package: $TARGET...${NC}"
-            distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y "$TARGET"
+            # Added -T
+            distrobox enter -T "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y "$TARGET"
             echo -e "${GREEN}✅ Update complete.${NC}"
         fi
         ;;
@@ -120,7 +161,8 @@ case "$COMMAND" in
         ensure_container
         if [ -z "$TARGET" ]; then
             echo -e "${BLUE}============ 1/2: UPDATING APPS ============${NC}"
-            distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
+            # Added -T
+            distrobox enter -T "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
 
             echo -e "${BLUE}============ 2/2: UPDATING SYSTEM (Bootc) ============${NC}"
             echo -e "${YELLOW}Checking for TrashcanOS Core Updates...${NC}"
@@ -130,7 +172,8 @@ case "$COMMAND" in
         else
             # If user specifies a package, just update that package
             echo -e "${GREEN}📦 Updating package: $TARGET...${NC}"
-            distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y "$TARGET"
+            # Added -T
+            distrobox enter -T "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y "$TARGET"
         fi
         ;;
 
@@ -149,7 +192,8 @@ case "$COMMAND" in
         # 2. Containers
         echo -e "${BLUE}🧊 [2/4] Updating Container Apps...${NC}"
         ensure_container
-        distrobox enter "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
+        # Added -T
+        distrobox enter -T "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
 
         # 3. System Base (Bootc)
         echo -e "${BLUE}💿 [3/4] Updating TrashcanOS Core...${NC}"
@@ -165,7 +209,8 @@ case "$COMMAND" in
 
     list)
         ensure_container
-        distrobox enter "$CONTAINER_NAME" -- dnf list installed --userinstalled
+        # Added -T
+        distrobox enter -T "$CONTAINER_NAME" -- dnf list installed --userinstalled
         ;;
 
     *)

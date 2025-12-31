@@ -152,6 +152,9 @@ RUN rm -rf /usr/share/ublue-os \
 RUN rm -f /usr/bin/bazzite* \
           /usr/libexec/bazzite*
 
+RUN mkdir -p /usr/share/ublue-os/ && \
+    echo '{"image-name": "trashcanos", "image-flavor": "latest", "base-image-name": "fedora", "fedora-version": "unknown"}' > /usr/share/ublue-os/image-info.json
+
 COPY assets/default-light.png /usr/share/wallpapers/default-light.png
 COPY assets/default-dark.png /usr/share/wallpapers/default-dark.png
 COPY assets/org.trashcanos.desktop /usr/share/plasma/look-and-feel/org.trashcanos.desktop
