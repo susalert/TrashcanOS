@@ -9,7 +9,7 @@ FROM ghcr.io/ublue-os/bazzite:stable
 # RUN rm /opt && mkdir /opt
 
 ## -------------------------------- GPG KEY -------------------------------- ##
-COPY assets/RPM-GPG-KEY-terra43-mesa /etc/pki/rpm-gpg/RPM-GPG-KEY-terra43-mesa
+# COPY assets/RPM-GPG-KEY-terra43-mesa /etc/pki/rpm-gpg/RPM-GPG-KEY-terra43-mesa
 ## ---------------------------------=======--------------------------------- ##
 
 ### MODIFICATIONS
