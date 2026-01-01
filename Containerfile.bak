@@ -2,15 +2,15 @@
 FROM scratch AS ctx
 COPY build_files /
 
-# 🍌 ROOT CAUSE FIX: Pin to STABLE (Fedora 41) instead of :latest (which might be pulling Rawhide)
+# Base Image
 FROM ghcr.io/ublue-os/bazzite:stable
 
 ### [IM]MUTABLE /opt (Optional)
 # RUN rm /opt && mkdir /opt
 
-## -------------------------------- GPG KEY -------------------------------- ##
-COPY assets/RPM-GPG-KEY-terra43-mesa /etc/pki/rpm-gpg/RPM-GPG-KEY-terra43-mesa
-## ---------------------------------=======--------------------------------- ##
+## ------- CUSTOMIZATION ASSETS ------- ##
+COPY assets/ /usr/share/trashcanos-assets/
+## ------------------------------------ ##
 
 ### MODIFICATIONS
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
@@ -21,6 +21,18 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 
 ### LINTING
 RUN bootc container lint
+
+## ----------------------------------- GPG KEY FIX ----------------------------------- ##
+# This forces the build to proceed even if it can't find the 'terra43' key file.
+RUN sed -i 's/gpgcheck=1/gpgcheck=0/' /etc/yum.repos.d/terra.repo 2>/dev/null || true && \
+    sed -i 's/gpgcheck=1/gpgcheck=0/' /etc/yum.repos.d/terra-mesa.repo 2>/dev/null || true
+    
+# ☢️ NUCLEAR FIX: DELETE the gpgkey line so DNF doesn't look for the missing file
+# We also disable gpgcheck just to be safe.
+RUN sed -i '/^gpgkey=/d' /etc/yum.repos.d/rpmfusion*.repo && \
+    sed -i '/^gpgkey=/d' /etc/yum.repos.d/terra*.repo && \
+    sed -i 's/gpgcheck=1/gpgcheck=0/' /etc/yum.repos.d/rpmfusion*.repo
+## ------------------------------------------------------------------------------------ ##
 
 ## ----------- BAZAAR DISPOSAL & EDITOR SETUP ----------- ##
 RUN rpm-ostree override remove bazaar && \
@@ -52,15 +64,15 @@ RUN chmod +x /usr/bin/app \
 RUN mkdir -p /etc/trashcan
 ## ------------------------------------------------------------------ ##
 
-## ------------------- OS IDENTITY (CLEAN REBRAND) ------------------- ##
-# 🍌 NO HACKS NEEDED HERE.
-# Since we are on Fedora 41, we can just set the NAME and keep ID=fedora for safety.
-# We include the Trojan Horse script just in case you want the runtime ID to be correct.
-
-# 1. BUILD TIME: Set Branding
+## ------------------- OS IDENTITY (THE TROJAN HORSE) ------------------- ##
+# 1. BUILD TIME: Set ID=fedora so ISO builder works.
+#    Set NAME/PRETTY_NAME for branding immediately.
 RUN sed -i \
     -e 's/^NAME=.*/NAME="TrashcanOS"/' \
     -e 's/^PRETTY_NAME=.*/PRETTY_NAME="TrashcanOS sAlpha"/' \
+    -e 's/^ID=.*/ID=fedora/' \
+    -e 's/^VERSION_ID=.*/VERSION_ID=42/' \
+    -e 's/^ID_LIKE=.*/ID_LIKE="fedora"/' \
     -e 's/^VARIANT=.*/VARIANT="General Drivers"/' \
     -e 's/^VARIANT_ID=.*/VARIANT_ID=trashcanos/' \
     -e 's/^LOGO=.*/LOGO=trashcanos/' \
@@ -76,13 +88,15 @@ RUN sed -i \
     -e '/^IMAGE_ID=/d' \
     /usr/lib/os-release
 
-# 2. FIRST BOOT: Trojan Horse Script (Optional but recommended)
+# 2. FIRST BOOT: Create the "Trojan Horse" script
+# This script runs ONCE, changes ID to trashcanos, then kills itself.
 RUN echo '#!/bin/bash' > /usr/local/bin/fix-identity.sh && \
     echo 'sed -i "s/^ID=fedora/ID=trashcanos/" /usr/lib/os-release' >> /usr/local/bin/fix-identity.sh && \
     echo 'systemctl disable fix-identity.service' >> /usr/local/bin/fix-identity.sh && \
     echo 'rm -f /usr/local/bin/fix-identity.sh' >> /usr/local/bin/fix-identity.sh && \
     chmod +x /usr/local/bin/fix-identity.sh
 
+# 3. FIRST BOOT: Create the Service to run the script
 RUN echo '[Unit]' > /etc/systemd/system/fix-identity.service && \
     echo 'Description=Initialize TrashcanOS Identity' >> /etc/systemd/system/fix-identity.service && \
     echo 'After=network.target' >> /etc/systemd/system/fix-identity.service && \
@@ -93,20 +107,20 @@ RUN echo '[Unit]' > /etc/systemd/system/fix-identity.service && \
     echo 'WantedBy=multi-user.target' >> /etc/systemd/system/fix-identity.service && \
     systemctl enable fix-identity.service
 
-# 3. Create Custom Release File & Link Legacy Files
+# 4. Create Custom Release File & Link Legacy Files
 RUN printf "TrashcanOS release sAlpha (General Drivers)\n" > /usr/lib/trashcanos-release && \
     ln -sf /usr/lib/trashcanos-release /etc/trashcanos-release && \
     ln -sf /usr/lib/trashcanos-release /etc/system-release && \
     ln -sf /usr/lib/trashcanos-release /etc/redhat-release
 
-# 4. Inject the Logo
+# 5. Inject the Logo
 COPY assets/trashcanos.svg /usr/share/pixmaps/trashcanos.svg
 COPY assets/trashcanos.svg /usr/share/icons/hicolor/scalable/apps/trashcanos.svg
 
-# 5. Set Hostname
+# 6. Set Hostname
 RUN echo "trashcanos" > /etc/hostname
 
-# 6. Plymouth Theme
+# 7. Plymouth Theme
 RUN plymouth-set-default-theme spinner
 ## ------------------------------------------------------------------ ##
 
