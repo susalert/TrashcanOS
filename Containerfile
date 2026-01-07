@@ -9,7 +9,7 @@ FROM ghcr.io/ublue-os/bazzite:stable
 # RUN rm /opt && mkdir /opt
 
 ## -------------------------------- GPG KEY -------------------------------- ##
-# COPY assets/RPM-GPG-KEY-terra43-mesa /etc/pki/rpm-gpg/RPM-GPG-KEY-terra43-mesa
+COPY assets/bin/terra.repo /etc/yum.repos.d/terra.repo
 ## ---------------------------------=======--------------------------------- ##
 
 ### MODIFICATIONS
@@ -60,7 +60,7 @@ RUN mkdir -p /etc/trashcan
 # 1. BUILD TIME: Set Branding
 RUN sed -i \
     -e 's/^NAME=.*/NAME="TrashcanOS"/' \
-    -e 's/^PRETTY_NAME=.*/PRETTY_NAME="TrashcanOS sAlpha"/' \
+    -e 's/^PRETTY_NAME=.*/PRETTY_NAME="TrashcanOS"/' \
     -e 's/^VARIANT=.*/VARIANT="General Drivers"/' \
     -e 's/^VARIANT_ID=.*/VARIANT_ID=trashcanos/' \
     -e 's/^LOGO=.*/LOGO=trashcanos/' \
@@ -94,7 +94,7 @@ RUN echo '[Unit]' > /etc/systemd/system/fix-identity.service && \
     systemctl enable fix-identity.service
 
 # 3. Create Custom Release File & Link Legacy Files
-RUN printf "TrashcanOS release sAlpha (General Drivers)\n" > /usr/lib/trashcanos-release && \
+RUN printf "TrashcanOS release (General Drivers)\n" > /usr/lib/trashcanos-release && \
     ln -sf /usr/lib/trashcanos-release /etc/trashcanos-release && \
     ln -sf /usr/lib/trashcanos-release /etc/system-release && \
     ln -sf /usr/lib/trashcanos-release /etc/redhat-release
@@ -127,7 +127,7 @@ RUN rm -f \
     /usr/share/kservices5/bazzite-about-distro.desktop \
     2>/dev/null || true
 
-RUN echo 'echo "🍌 Welcome to TrashcanOS sAlpha."' > /etc/profile.d/00-trashcan-welcome.sh
+RUN echo 'echo "🍌 Welcome to TrashcanOS."' > /etc/profile.d/00-trashcan-welcome.sh
 ## -------------------------------------------------------------------- ##
 
 ## ------------------- ☢️ NUCLEAR BRANDING INJECTION ------------------- ##
