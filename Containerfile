@@ -9,6 +9,10 @@ FROM ghcr.io/ublue-os/bazzite:stable
 # RUN rm /opt && mkdir /opt
 
 ## -------------------------------- GPG KEY -------------------------------- ##
+RUN sed -i '/^metalink=/d' /etc/yum.repos.d/terra*.repo
+RUN . /etc/os-release && \
+    sed -i "s|^#baseurl=.*|baseurl=https://repos.fyralabs.com/terra${VERSION_ID}|" /etc/yum.repos.d/terra.repo && \
+    sed -i "s|^#baseurl=.*|baseurl=https://repos.fyralabs.com/terra${VERSION_ID}/mesa|" /etc/yum.repos.d/terra-mesa.repo
 RUN . /etc/os-release && \
     rpm --import https://repos.fyralabs.com/terra${VERSION_ID}/key.asc
 COPY assets/bin/terra.repo /etc/yum.repos.d/terra.repo
