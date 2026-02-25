@@ -10,6 +10,9 @@ FROM ghcr.io/ublue-os/bazzite:stable
 
 ## -------------------------------- GPG KEY -------------------------------- ##
 COPY assets/bin/terra.repo /etc/yum.repos.d/terra.repo
+RUN sed -i \
+'s|gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-terra.*|gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc|' \
+/etc/yum.repos.d/terra*.repo
 ## ---------------------------------=======--------------------------------- ##
 
 ### MODIFICATIONS

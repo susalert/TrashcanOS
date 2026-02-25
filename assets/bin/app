@@ -1,219 +1,244 @@
-#!/bin/bash
+#!/usr/bin/env python3
 # app - The TrashcanOS Package Manager Wrapper
 # 🍌 TrashcanOS: Chaos Verified.
 
-COMMAND="$1"
-TARGET="$2"
-CONTAINER_NAME="trashcan-box"
+import sys
+import subprocess
+import difflib
+import time
+import threading
+import os
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+# 🌸 Configuration 🌸
+CONTAINER_NAME = "trashcan-box"
+LOG_FILE = "/tmp/trashcan_app_log.txt"
 
-# Helper: Ensure the backend container exists and is ALIVE
-ensure_container() {
-    # 1. Check if it exists at all
-    if ! podman container exists "$CONTAINER_NAME" > /dev/null 2>&1; then
-        echo -e "${GREEN}📦 Initializing the App Environment (First run only)...${NC}"
-        # Use quay.io for better speed/reliability
-        distrobox create -n "$CONTAINER_NAME" -i quay.io/fedora/fedora:latest -Y > /dev/null
-        
-        # --- CRITICAL FIX: FORCE INIT ---
-        # We enter once with a dummy command to let Distrobox set up basic packages
-        echo -e "${BLUE}⚙️  Setting up container internals...${NC}"
-        distrobox enter -T "$CONTAINER_NAME" -- true > /dev/null 2>&1
+# 🎨 Color Palette 🎨
+GREEN = '\033[0;32m'
+BLUE = '\033[0;34m'
+YELLOW = '\033[1;33m'
+RED = '\033[0;31m'
+NC = '\033[0m'
+
+def aesthetic_spinner(event, message):
+    """The clean, zero-bloat spinner."""
+    chars = ['✨', '🌟', '💫', '⭐', '🌠']
+    i = 0
+    # Hide cursor
+    sys.stdout.write('\033[?25l')
+    while not event.is_set():
+        sys.stdout.write(f"\r{BLUE}{chars[i]} {message}...{NC}  ")
+        sys.stdout.flush()
+        time.sleep(0.2)
+        i = (i + 1) % len(chars)
+    # Clear line and show cursor
+    sys.stdout.write("\r\033[K\033[?25h")
+    sys.stdout.flush()
+
+def run_quiet(cmd, message):
+    """Runs a process silently while spinning, logs output to file."""
+    event = threading.Event()
+    thread = threading.Thread(target=aesthetic_spinner, args=(event, message))
+    thread.start()
+    
+    with open(LOG_FILE, "a") as log:
+        log.write(f"\n--- Running: {cmd} ---\n")
+        process = subprocess.run(cmd, shell=True, stdout=log, stderr=subprocess.STDOUT, text=True)
+    
+    event.set()
+    thread.join()
+    return process
+
+def run_capture(cmd):
+    """Runs a process quietly but returns the output for us to analyze."""
+    return subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+def ensure_container():
+    """Checks if the container exists and is alive, just like your bash script!"""
+    check_exists = run_capture(f"podman container exists {CONTAINER_NAME}")
+    
+    if check_exists.returncode != 0:
+        print(f"{GREEN}📦 Initializing the App Environment (First run only)...{NC}")
+        run_quiet(f"distrobox create -n {CONTAINER_NAME} -i quay.io/fedora/fedora:latest -Y", "Creating container")
+        run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- true", "Setting up container internals")
         return
-    fi
 
-    # 2. Check if it is actually broken (Zombie check)
-    # We use -T here to avoid TTY errors during the check
-    if ! distrobox enter -T "$CONTAINER_NAME" -- true > /dev/null 2>&1; then
-        echo -e "${RED}⚠️  Detected corrupted App Environment!${NC}"
-        echo -e "${YELLOW}♻️  Rebuilding trashcan-box...${NC}"
-        distrobox rm "$CONTAINER_NAME" --force > /dev/null 2>&1
+    check_alive = run_capture(f"distrobox enter -T {CONTAINER_NAME} -- true")
+    if check_alive.returncode != 0:
+        print(f"{RED}⚠️  Detected corrupted App Environment!{NC}")
+        print(f"{YELLOW}♻️  Rebuilding trashcan-box...{NC}")
+        run_quiet(f"distrobox rm {CONTAINER_NAME} --force", "Nuking corrupted container")
+        run_quiet(f"distrobox create -n {CONTAINER_NAME} -i quay.io/fedora/fedora:latest -Y", "Recreating container")
+        run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- true", "Initializing container")
+
+def show_help():
+    print(f"🗑️  {GREEN}TrashcanOS App Manager{NC}")
+    print("Usage:")
+    print("  app install <package|file>   Search & Install (Flatpak -> DNF Fallback)")
+    print("  app remove <package>         Remove an app")
+    print("  app update [package]         Update apps only (DNF)")
+    print("  app upgrade [package]        Update System (Bootc) + Apps (DNF)")
+    print("  app full-upgrade             Force update EVERYTHING (Flatpak, DNF, Bootc, OSTree)")
+    print("  app list                     List installed apps")
+
+def install_app(target):
+    # Check for local Flatpak files
+    if target.endswith((".flatpakref", ".flatpak")):
+        print(f"{GREEN}📦 Detected Flatpak file. Installing to System (User)...{NC}")
+        res = run_quiet(f"flatpak install -y {target}", "Installing local Flatpak")
+        if res.returncode == 0:
+            print(f"{GREEN}✅ Flatpak installed!{NC}")
+        else:
+            print(f"{RED}❌ Failed. Check {LOG_FILE}{NC}")
+        return
+
+    ensure_container()
+
+    # Check if already installed in container
+    is_installed = run_capture(f"distrobox enter -T {CONTAINER_NAME} -- rpm -q {target}")
+    if is_installed.returncode == 0:
+        print(f"{YELLOW}⚠️  '{target}' is already installed.{NC}")
+        print(f"Did you mean to update it? Run: {GREEN}app update {target}{NC}")
+        return
+
+    # Check for local RPM
+    if target.endswith(".rpm"):
+        if os.path.isfile(target):
+            print(f"{GREEN}📦 Detected local RPM file. Installing in container...{NC}")
+            abs_path = os.path.abspath(target)
+            res = run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- sudo dnf install -y {abs_path}", "Installing RPM")
+            if res.returncode == 0:
+                run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- distrobox-export --app {target}", "Exporting shortcut")
+                print(f"{GREEN}✅ Installation complete!{NC}")
+            else:
+                print(f"{RED}❌ Installation FAILED. Check {LOG_FILE}{NC}")
+        else:
+            print(f"{RED}Error: File '{target}' not found.{NC}")
+        return
+
+    # --- THE PIPELINE: Flatpak -> DNF ---
+    print(f"{GREEN}🔍 Searching Flatpak for '{target}'...{NC}")
+    flat_search = run_capture(f"flatpak search {target} --columns=application,name")
+    
+    if flat_search.stdout.strip():
+        print(f"{YELLOW}💡 Found these on Flatpak:{NC}")
+        lines = flat_search.stdout.strip().split('\n')[:5]
+        for line in lines:
+            print(f"   {line}")
         
-        # Recreate
-        distrobox create -n "$CONTAINER_NAME" -i quay.io/fedora/fedora:latest -Y > /dev/null
-        # Init again
-        distrobox enter -T "$CONTAINER_NAME" -- true > /dev/null 2>&1
-    fi
-}
+        choice = input(f"\n{BLUE}Copy the exact Application ID to install (or press Enter for DNF): {NC}").strip()
+        if choice:
+            res = run_quiet(f"flatpak install -y flathub {choice}", f"Installing {choice}")
+            if res.returncode == 0:
+                print(f"{GREEN}✅ {choice} installed perfectly!{NC}")
+            else:
+                print(f"{RED}❌ Flatpak install failed. Check {LOG_FILE}{NC}")
+            return
 
-show_help() {
-    echo -e "🗑️  ${GREEN}TrashcanOS App Manager${NC}"
-    echo "Usage:"
-    echo "  app install <package|file>   Install an app (rpm, flatpak, or repo name)"
-    echo "  app remove <package>         Remove an app"
-    echo "  app update [package]         Update apps only (DNF)"
-    echo "  app upgrade [package]        Update System (Bootc) + Apps (DNF)"
-    echo "  app full-upgrade             Force update EVERYTHING (Flatpak, DNF, Bootc, RPM-OSTree)"
-    echo "  app list                     List installed apps"
-}
+    # Fallback to DNF
+    print(f"{YELLOW}⚠️  Moving to Container ({CONTAINER_NAME}) DNF fallback...{NC}")
+    
+    event = threading.Event()
+    thread = threading.Thread(target=aesthetic_spinner, args=(event, f"Searching DNF for {target}"))
+    thread.start()
+    dnf_search = run_capture(f"distrobox enter -T {CONTAINER_NAME} -- dnf search {target}")
+    event.set()
+    thread.join()
 
-if [ -z "$COMMAND" ]; then
-    show_help
-    exit 1
-fi
+    if "No matches found" in dnf_search.stdout or dnf_search.returncode != 0:
+        print(f"{RED}❌ Bestie, I literally couldn't find '{target}' anywhere. Check your spelling!{NC}")
+        return
 
-case "$COMMAND" in
-    install)
-        if [ -z "$TARGET" ]; then
-            echo -e "${RED}Error: You must specify a package name or file.${NC}"
-            exit 1
-        fi
-
-        # --- SMART CHECK: Is it already installed? ---
-        ensure_container
-        # Added -T
-        if distrobox enter -T "$CONTAINER_NAME" -- rpm -q "$TARGET" > /dev/null 2>&1; then
-            echo -e "${YELLOW}⚠️  '$TARGET' is already installed.${NC}"
-            echo -e "Did you mean to update it? Run: ${GREEN}app update $TARGET${NC}"
-            exit 0
-        fi
-        # ---------------------------------------------
-
-        # --- 1. HANDLE FLATPAKS (Host Level) ---
-        if [[ "$TARGET" == *.flatpakref ]] || [[ "$TARGET" == *.flatpak ]]; then
-             echo -e "${GREEN}📦 Detected Flatpak file. Installing to System (User)...${NC}"
-             flatpak install -y "$TARGET"
-             echo -e "${GREEN}✅ Flatpak installed!${NC}"
-             exit 0
-        fi
-
-        # --- 2. HANDLE EVERYTHING ELSE (Container Level) ---
-        ensure_container
-
-        # Check: Is it a local .rpm file?
-        if [[ "$TARGET" == *.rpm ]]; then
-            if [ -f "$TARGET" ]; then
-                echo -e "${GREEN}📦 Detected local RPM file. Installing in container...${NC}"
-                RPM_PATH=$(realpath "$TARGET")
-                
-                # Added -T
-                if distrobox enter -T "$CONTAINER_NAME" -- sudo dnf install -y "$RPM_PATH"; then
-                    echo -e "${GREEN}🔗 Exporting to host menu...${NC}"
-                    distrobox enter -T "$CONTAINER_NAME" -- distrobox-export --app "$TARGET" 2>/dev/null || true
-                    echo -e "${GREEN}✅ Installation complete!${NC}"
-                else
-                    echo -e "${RED}❌ Installation FAILED.${NC}"
-                    exit 1
-                fi
-            else
-                echo -e "${RED}Error: File '$TARGET' not found.${NC}"
-                exit 1
-            fi
-        else
-            # Standard repo package
-            echo -e "${GREEN}⬇️  Downloading and installing $TARGET...${NC}"
-            
-            # Added -T to fix "Inappropriate ioctl for device"
-            if distrobox enter -T "$CONTAINER_NAME" -- sudo dnf install -y "$TARGET"; then
-                echo -e "${GREEN}🔗 Exporting to host menu...${NC}"
-                distrobox enter -T "$CONTAINER_NAME" -- distrobox-export --app "$TARGET" 2>/dev/null || true
-                echo -e "${GREEN}✅ Installation complete!${NC}"
-            else
-                echo -e "${RED}❌ Installation FAILED.${NC}"
-                exit 1
-            fi
-        fi
-        ;;
-
-    remove)
-        if [ -z "$TARGET" ]; then
-            echo -e "${RED}Error: What do you want to remove?${NC}"
-            exit 1
-        fi
-        ensure_container
+    print(f"{YELLOW}💡 Found these close matches in DNF:{NC}")
+    # Filter out the noisy metadata text
+    clean_lines = [line for line in dnf_search.stdout.split('\n') if "Last metadata expiration" not in line and "matched:" not in line and line.strip()]
+    for line in clean_lines[:8]:
+        print(f"   {line}")
         
-        # --- FIX: REMOVE SHORTCUT FIRST ---
-        echo -e "${YELLOW}🧹 Cleaning up shortcuts for $TARGET...${NC}"
-        # Added -T
-        distrobox enter -T "$CONTAINER_NAME" -- distrobox-export --delete "$TARGET" 2>/dev/null || true
-        # ----------------------------------
+    dnf_pkg = input(f"\n{BLUE}Enter the exact package name to install (or press Enter to cancel): {NC}").strip()
+    
+    if dnf_pkg:
+        res = run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- sudo dnf install -y {dnf_pkg}", f"Installing {dnf_pkg} via DNF")
+        if res.returncode == 0:
+            run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- distrobox-export --app {dnf_pkg}", "Exporting to host menu")
+            print(f"{GREEN}✅ {dnf_pkg} installed successfully!{NC}")
+        else:
+            print(f"{RED}❌ DNF install failed. Check {LOG_FILE}{NC}")
+    else:
+        print(f"{RED}❌ Installation cancelled.{NC}")
 
-        # Added -T
-        distrobox enter -T "$CONTAINER_NAME" -- sudo dnf remove -y "$TARGET"
-        echo -e "${GREEN}🗑️  $TARGET removed.${NC}"
-        ;;
+def main():
+    if len(sys.argv) < 2:
+        show_help()
+        sys.exit(1)
 
-    update)
-        ensure_container
-        if [ -z "$TARGET" ]; then
-            # No argument: Update ALL Apps
-            echo -e "${GREEN}📦 Updating all Container Apps...${NC}"
-            # Added -T
-            distrobox enter -T "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
-            echo -e "${GREEN}✅ App updates complete.${NC}"
-        else
-            # Argument provided: Update specific App
-            echo -e "${GREEN}📦 Updating package: $TARGET...${NC}"
-            # Added -T
-            distrobox enter -T "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y "$TARGET"
-            echo -e "${GREEN}✅ Update complete.${NC}"
-        fi
-        ;;
+    command = sys.argv[1]
+    target = sys.argv[2] if len(sys.argv) > 2 else ""
 
-    upgrade)
-        # 1. Update Apps
-        ensure_container
-        if [ -z "$TARGET" ]; then
-            echo -e "${BLUE}============ 1/2: UPDATING APPS ============${NC}"
-            # Added -T
-            distrobox enter -T "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
+    if command == "install":
+        if not target:
+            print(f"{RED}Error: You must specify a package name or file.{NC}")
+            sys.exit(1)
+        install_app(target)
 
-            echo -e "${BLUE}============ 2/2: UPDATING SYSTEM (Bootc) ============${NC}"
-            echo -e "${YELLOW}Checking for TrashcanOS Core Updates...${NC}"
-            sudo /usr/bin/bootc upgrade
+    elif command == "remove":
+        if not target:
+            print(f"{RED}Error: What do you want to remove?{NC}")
+            sys.exit(1)
+        ensure_container()
+        run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- distrobox-export --delete {target}", "Cleaning up shortcuts")
+        run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- sudo dnf remove -y {target}", f"Removing {target}")
+        print(f"{GREEN}🗑️  {target} has been completely wiped.{NC}")
 
-            echo -e "${GREEN}✅ System & App Upgrade Complete.${NC}"
-        else
-            # If user specifies a package, just update that package
-            echo -e "${GREEN}📦 Updating package: $TARGET...${NC}"
-            # Added -T
-            distrobox enter -T "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y "$TARGET"
-        fi
-        ;;
+    elif command == "update":
+        ensure_container()
+        if not target:
+            run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- sudo dnf upgrade --refresh -y", "Updating all Container Apps")
+            print(f"{GREEN}✅ All apps updated.{NC}")
+        else:
+            run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- sudo dnf upgrade --refresh -y {target}", f"Updating {target}")
+            print(f"{GREEN}✅ Update complete.{NC}")
 
-    full-upgrade)
-        if [ ! -z "$TARGET" ]; then
-             echo -e "${RED}Error: 'full-upgrade' does not accept package names. It updates EVERYTHING.${NC}"
-             exit 1
-        fi
+    elif command == "upgrade":
+        ensure_container()
+        if not target:
+            print(f"{BLUE}============ 1/2: UPDATING APPS ============{NC}")
+            run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- sudo dnf upgrade --refresh -y", "Running DNF upgrade")
+            print(f"{BLUE}============ 2/2: UPDATING SYSTEM (Bootc) ============{NC}")
+            run_quiet("sudo /usr/bin/bootc upgrade", "Upgrading TrashcanOS Core")
+            print(f"{GREEN}✅ System & App Upgrade Complete.{NC}")
+        else:
+            run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- sudo dnf upgrade --refresh -y {target}", f"Updating {target}")
+            print(f"{GREEN}✅ Package upgraded.{NC}")
 
-        echo -e "${RED}⚠️ WARNING: Performing a FULL SYSTEM overhaul${NC}"
+    elif command == "full-upgrade":
+        if target:
+            print(f"{RED}Error: 'full-upgrade' does not accept package names. It updates EVERYTHING.{NC}")
+            sys.exit(1)
+        
+        print(f"{RED}⚠️  WARNING: Performing a FULL SYSTEM overhaul{NC}")
+        print(f"{BLUE}📦 [1/4] Updating Flatpaks...{NC}")
+        run_quiet("flatpak update -y", "Updating Flatpak environment")
+        
+        print(f"{BLUE}🧊 [2/4] Updating Container Apps...{NC}")
+        ensure_container()
+        run_quiet(f"distrobox enter -T {CONTAINER_NAME} -- sudo dnf upgrade --refresh -y", "Updating Container DNF")
+        
+        print(f"{BLUE}💿 [3/4] Updating TrashcanOS Core...{NC}")
+        run_quiet("sudo /usr/bin/bootc upgrade", "Upgrading via Bootc")
+        
+        print(f"{BLUE}🛡️  [4/4] Updating Layered Drivers...{NC}")
+        run_quiet("sudo /usr/bin/rpm-ostree upgrade", "Upgrading RPM-OSTree layers")
+        
+        print(f"{GREEN}✅ FULL SYSTEM UPGRADE COMPLETE!{NC}")
+        print(f"{YELLOW}ℹ️  Please reboot to apply the OS Core updates!{NC}")
 
-        # 1. Flatpaks
-        echo -e "${BLUE}📦 [1/4] Updating Flatpaks...${NC}"
-        flatpak update -y
+    elif command == "list":
+        ensure_container()
+        subprocess.run(f"distrobox enter -T {CONTAINER_NAME} -- dnf list installed --userinstalled", shell=True)
 
-        # 2. Containers
-        echo -e "${BLUE}🧊 [2/4] Updating Container Apps...${NC}"
-        ensure_container
-        # Added -T
-        distrobox enter -T "$CONTAINER_NAME" -- sudo dnf upgrade --refresh -y
+    else:
+        show_help()
 
-        # 3. System Base (Bootc)
-        echo -e "${BLUE}💿 [3/4] Updating TrashcanOS Core...${NC}"
-        sudo /usr/bin/bootc upgrade
-
-        # 4. Layered Packages (RPM-OSTree)
-        echo -e "${BLUE}🛡️  [4/4] Updating Layered Drivers...${NC}"
-        sudo /usr/bin/rpm-ostree upgrade
-
-        echo -e "${GREEN}✅ FULL SYSTEM UPGRADE COMPLETE!${NC}"
-        echo -e "${YELLOW}ℹ️  Please reboot if System/Core updates were applied.${NC}"
-        ;;
-
-    list)
-        ensure_container
-        # Added -T
-        distrobox enter -T "$CONTAINER_NAME" -- dnf list installed --userinstalled
-        ;;
-
-    *)
-        show_help
-        ;;
-esac
+if __name__ == "__main__":
+    main()
