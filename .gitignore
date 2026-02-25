@@ -6,3 +6,6 @@ _build-*
 img/
 *.qcow2
 *.iso
+assets/
+*.bak
+artifacthub-repo.yml
