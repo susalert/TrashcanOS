@@ -13,6 +13,7 @@ COPY assets/bin/terra.repo /etc/yum.repos.d/terra.repo
 RUN sed -i \
 's|gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-terra.*|gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc|' \
 /etc/yum.repos.d/terra*.repo
+RUN rpm --import https://repos.fyralabs.com/terra$releasever/key.asc
 ## ---------------------------------=======--------------------------------- ##
 
 ### MODIFICATIONS
