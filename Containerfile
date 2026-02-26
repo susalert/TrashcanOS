@@ -39,9 +39,9 @@ ENV VISUAL=nvim
 ## ------------------------------------------------------ ##
 
 ## ---------- DEV TESTING USER ---------- ##
-RUN useradd -m -G wheel test && \
-    echo "test:test" | chpasswd && \
-    echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-wheel-nopasswd
+#RUN useradd -m -G wheel test && \
+#    echo "test:test" | chpasswd && \
+#    echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-wheel-nopasswd
 ## -------------------------------------- ##
 
 ## ------------------- APP MANAGER & RESTRICTIONS ------------------- ##
@@ -106,8 +106,20 @@ RUN printf "TrashcanOS release (General Drivers)\n" > /usr/lib/trashcanos-releas
     ln -sf /usr/lib/trashcanos-release /etc/redhat-release
 
 # 4. Inject the Logo
+RUN rm -rf /usr/share/pixmaps/fedora_whitelogo.svg
 COPY assets/trashcanos.svg /usr/share/pixmaps/trashcanos.svg
 COPY assets/trashcanos.svg /usr/share/icons/hicolor/scalable/apps/trashcanos.svg
+COPY assets/logo/trashcanos.ico /usr/share/pixmaps/fedora-logo.ico
+COPY assets/logo/TrashcanOS-banner.png /usr/share/pixmaps/fedora-logo.png
+COPY assets/logo/TrashcanOS-banner-small.png /usr/share/pixmaps/fedora-logo-small.png
+COPY assets/logo/trashcanos.png /usr/share/pixmaps/fedora-logo-sprite.png
+COPY assets/trashcanos.svg /usr/share/pixmaps/fedora-logo-sprite.svg
+COPY assets/logo/TrashcanOS-banner.png /usr/share/pixmaps/fedora-gdm-logo.png
+COPY assets/logo/TrashcanOS-banner.png /usr/share/pixmaps/fedora_logo_med.png
+COPY assets/logo/TrashcanOS-banner.png /usr/share/pixmaps/fedora_whitelogo_med.png
+COPY assets/logo/trashcanos.png /usr/share/pixmaps/system-logo-white.png
+COPY assets/logo/trashcanos.png /usr/share/pixmaps/bootloader/bootlogo_128.png
+COPY assets/logo/trashcanos256.png /usr/share/pixmaps/bootloader/bootlogo_256.png
 
 # 5. Set Hostname
 RUN echo "trashcanos" > /etc/hostname
