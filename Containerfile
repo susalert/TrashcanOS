@@ -136,6 +136,7 @@ RUN rm -f \
     /usr/share/applications/*discourse*.desktop \
     /usr/share/applications/system-update.desktop \
     /usr/share/applications/org.gnome.Software.desktop \
+    /usr/share/yafti \
     /etc/xdg/autostart/steam.desktop \
     /usr/share/autostart/steam.desktop \
     /etc/profile.d/bazzite-neofetch.sh \
