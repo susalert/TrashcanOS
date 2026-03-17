@@ -29,7 +29,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 RUN bootc container lint
 
 ## ------------------- Making a /home dir ----------------- ##
-RUN mkdir -p /home
+# RUN mkdir -p /home
 
 ## ----------- BAZAAR DISPOSAL & EDITOR SETUP ----------- ##
 RUN rpm-ostree override remove bazaar && \
