@@ -28,6 +28,9 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
 ### LINTING
 RUN bootc container lint
 
+## ------------------- Making a /home dir ----------------- ##
+RUN mkdir -p /home
+
 ## ----------- BAZAAR DISPOSAL & EDITOR SETUP ----------- ##
 RUN rpm-ostree override remove bazaar && \
     rpm-ostree install plasma-discover && \
