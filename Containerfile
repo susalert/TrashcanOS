@@ -42,9 +42,9 @@ ENV VISUAL=nvim
 ## ------------------------------------------------------ ##
 
 ## ---------- DEV TESTING USER ---------- ##
-#RUN useradd -m -G wheel test && \
-#    echo "test:test" | chpasswd && \
-#    echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-wheel-nopasswd
+RUN useradd -m -G wheel test && \
+    echo "test:test" | chpasswd && \
+    echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-wheel-nopasswd
 ## -------------------------------------- ##
 
 ## ------------------- APP MANAGER & RESTRICTIONS ------------------- ##
